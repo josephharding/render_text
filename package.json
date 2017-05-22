@@ -1,0 +1,9 @@
+{
+  "name": "webgl",
+  "dependencies": {
+    "express": "latest"
+  },
+  "scripts": {
+    "start": "node app.js"
+  }
+}
