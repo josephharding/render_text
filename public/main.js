@@ -132,10 +132,8 @@ function initScene(gl, image) {
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
-	var primitiveType = gl.TRIANGLES;
-	var offset = 0;
-	var count = positions.length / size;
-	gl.drawArrays(primitiveType, offset, count);
+	var count = positions.length / 2;
+	gl.drawArrays(gl.TRIANGLES, 0, count);
 };
 
 window.onload = function() {
