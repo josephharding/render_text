@@ -1,14 +1,13 @@
 
 var getVertexShader = function() {
 	return `#version 300 es 
-	// an attribute is an input (in) to a vertex shader.
-	// It will receive data from a buffer
-	in vec4 a_position; 
-	// all shaders have a main function
-	void main() { 
-  	// gl_Position is a special variable a vertex shader
-  	// is responsible for setting
-  	gl_Position = a_position;
+	in vec2 a_position; 
+  uniform vec2 u_resolution;
+  void main() {
+    vec2 zeroToOne = a_position / u_resolution;
+    vec2 zeroToTwo = a_position * 2.0;
+    vec2 clipSpace = zeroToTwo - 1.0;
+  	gl_Position = vec4(clipSpace, 0, 1);
 	}`;
 }
 
@@ -23,7 +22,7 @@ var getFragmentShader = function() {
 	 
 	void main() {
 		// Just set the output to a constant redish-purple
-		outColor = vec4(1, 0, 0.5, 1);
+		outColor = vec4(1, 0, 1, 1);
 	}`;
 }
 
@@ -64,13 +63,18 @@ window.onload = function() {
   var program = createProgram(gl, vertexShader, fragmentShader);
   
   var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  var resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution"); 
+
   var positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 	
 	var positions = [
   	0, 0,
-		0, 1,
 		1, 0,
+		1, 1,
+		1, 1,
+		0, 1,
+		0, 0,
 	];
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -93,10 +97,12 @@ window.onload = function() {
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.useProgram(program);
-	gl.bindVertexArray(vao);
+  
+  gl.uniform2f(resolutionUniformLocation, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.bindVertexArray(vao);
 
 	var primitiveType = gl.TRIANGLES;
 	var offset = 0;
-	var count = 3;
+	var count = positions.length / size;
 	gl.drawArrays(primitiveType, offset, count);
 };
