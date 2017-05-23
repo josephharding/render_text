@@ -19,25 +19,28 @@ function GlyphGrid(gl, image) {
 }
 
 GlyphGrid.prototype.updateText = function(text) {
-  var glyphDim = 20;
-  var imageDim = 100;
+  var glyphDim = 32;
+  var imageDim = 256;
 
   var scaled_glyph_dim = glyphDim / imageDim;
 
-  var glyph_uv_map = {
-    a: {
-      x: 0,
-      y: 0
-    },
-    b: {
-      x: 1,
-      y: 0
-    },
-    c: {
-      x: 2,
-      y: 0
+  var alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
+  var x = 0;
+  var y = 0;
+  var glyph_uv_map = {};
+  for(let c of alphabet) {
+    glyph_uv_map[c] = {
+      x: x,
+      y: y
+    };
+    x += 1; 
+    if(x * glyphDim == imageDim) {
+      x = 0;
+      y++;
     }
-  };
+  }
+  console.log("glyph_uv_map:", glyph_uv_map);
   var text_len = text.length;
 
   this._uvs = [];

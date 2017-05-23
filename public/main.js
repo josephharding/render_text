@@ -19,7 +19,7 @@ window.onload = function() {
   renderer = new Renderer();
 
   var image = new Image();
-  image.src = "abc.png";
+  image.src = "alphabet.jpg";
   image.addEventListener('load', function (e) {
     
     renderer.init(gl, image);
