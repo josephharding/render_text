@@ -2,8 +2,10 @@
 GlyphGrid.prototype._grid;
 GlyphGrid.prototype._uvs;
 GlyphGrid.prototype._texture;
+GlyphGrid.prototype._program;
 
 function GlyphGrid(gl, image) {
+  //this._program = program;
   this._texture = gl.createTexture();
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.activeTexture(gl.TEXTURE0);
@@ -16,7 +18,7 @@ function GlyphGrid(gl, image) {
   gl.generateMipmap(gl.TEXTURE_2D);
 }
 
-GlyphGrid.prototype.updateText = function(text, posAttrLoc, uvAttrLoc) {
+GlyphGrid.prototype.updateText = function(text) {
   var glyphDim = 20;
   var imageDim = 100;
 
@@ -51,7 +53,7 @@ GlyphGrid.prototype.updateText = function(text, posAttrLoc, uvAttrLoc) {
     this._uvs = this._uvs.concat([origin_x, origin_y + scaled_glyph_dim]);
     this._uvs = this._uvs.concat([origin_x, origin_y]);		
   }
-  this._grid = new Grid(0.2, 0.2, text_len, 1, this._uvs, gl, posAttrLoc, uvAttrLoc);
+  this._grid = new Grid(0.2, 0.2, text_len, 1, this._uvs, gl);
 };
 
 GlyphGrid.prototype.draw = function(gl) {

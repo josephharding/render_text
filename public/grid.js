@@ -3,7 +3,7 @@ Grid.prototype._vao;
 Grid.prototype._positions;
 Grid.prototype._uvs;
 
-function Grid(sec_width, sec_height, width, height, uvs, gl, posAttrLoc, uvAttrLoc) {
+function Grid(sec_width, sec_height, width, height, uvs, gl) {
 
   this._uvs = uvs;
  	this._positions = [];
@@ -26,14 +26,19 @@ function Grid(sec_width, sec_height, width, height, uvs, gl, posAttrLoc, uvAttrL
   var positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._positions), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(posAttrLoc);
-  gl.vertexAttribPointer(posAttrLoc, 2, gl.FLOAT, false, 0, 0);
-  
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+
   var uvBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._uvs), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(uvAttrLoc);
-  gl.vertexAttribPointer(uvAttrLoc, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(0);
+
+  /*
+  gl.bindAttribLocation(program, 0, "a_position");
+  gl.bindAttribLocation(program, 1, "a_uv");
+  */
 }
 
 Grid.prototype.draw = function(gl) {
