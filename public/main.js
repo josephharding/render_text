@@ -29,10 +29,11 @@ var getFragmentShader = function() {
 	void main() {
 		// Just set the output to a constant redish-purple
 		outColor = texture(u_image, v_uv);
+		//outColor = vec4(1, 0, 0, 1);
 	}`;
 }
 
-function createShader(gl, type, source) {
+function createShader(type, source) {
   var shader = gl.createShader(type);
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
@@ -44,7 +45,7 @@ function createShader(gl, type, source) {
   gl.deleteShader(shader);
 }
 
-function createProgram(gl, vertexShader, fragmentShader) {
+function createProgram(vertexShader, fragmentShader) {
   var program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
@@ -57,18 +58,20 @@ function createProgram(gl, vertexShader, fragmentShader) {
   gl.deleteProgram(program);
 }
 
-function initScene(gl, image) {
-	var vertexShader = createShader(gl, gl.VERTEX_SHADER, getVertexShader());
-	var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, getFragmentShader());
-  var program = createProgram(gl, vertexShader, fragmentShader);
+function initScene(image) {
+	var vertexShader = createShader(gl.VERTEX_SHADER, getVertexShader());
+	var fragmentShader = createShader(gl.FRAGMENT_SHADER, getFragmentShader());
+  program = createProgram(vertexShader, fragmentShader);
   
-  var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-  var uvAttributeLocation = gl.getAttribLocation(program, "a_uv");
+  positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+  uvAttributeLocation = gl.getAttribLocation(program, "a_uv");
 
-  var resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution"); 
-  var imageUniformLocation = gl.getUniformLocation(program, "u_image"); 
-	
-	var vao = gl.createVertexArray();
+  resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution"); 
+  imageUniformLocation = gl.getUniformLocation(program, "u_image"); 
+
+  // VAO1
+  /*
+  var vao = gl.createVertexArray();
 	gl.bindVertexArray(vao);
 
 	// UV BUFFER
@@ -92,10 +95,10 @@ function initScene(gl, image) {
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);	
 	var positions = [
   	0, 0,
-		1, 0,
-		1, 1,
-		1, 1,
-		0, 1,
+		.5, 0,
+		.5, .5,
+		.5, .5,
+		0, .5,
 		0, 0,
 	];
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
@@ -134,18 +137,58 @@ function initScene(gl, image) {
 
 	var count = positions.length / 2;
 	gl.drawArrays(gl.TRIANGLES, 0, count);
+  */
+  // VAO1
+
+  mygrid = new GlyphGrid(gl, image);
+  mygrid.updateText(render_str, positionAttributeLocation, uvAttributeLocation);
 };
 
+function drawScene() {
+  mygrid.updateText(render_str, positionAttributeLocation, uvAttributeLocation);
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+	// Clear the canvas
+	gl.clearColor(0, 0, 0, 0);
+	gl.clear(gl.COLOR_BUFFER_BIT);
+	
+	gl.useProgram(program);	
+
+  gl.uniform1i(imageUniformLocation, 0);
+  gl.uniform2f(resolutionUniformLocation, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  
+  mygrid.draw(gl);
+};
+
+function renderTick() {
+	setTimeout(function() {
+		requestAnimationFrame(renderTick);
+	}, 20);
+	drawScene();
+};
+
+var gl;
+var positionAttributeLocation;
+var uvAttributeLocation;
+var imageUniformLocation;
+var resolutionUniformLocation;
+var mygrid;
+var program;
+var render_str = 'abc';
+
 window.onload = function() {
+  document.getElementById("str").addEventListener("input", function(e) {
+    render_str = e.currentTarget.value;
+  });
   var canvas = document.getElementById("canvas");
-  var gl = canvas.getContext("webgl2");
+  gl = canvas.getContext("webgl2");
   if(!gl) {
     console.log("dern! no webgl2");
   }
-
   var image = new Image();
   image.src = "abc.png";
   image.addEventListener('load', function (e) {
-    initScene(gl, image);
-  });
+    initScene(image);
+ 		renderTick(); 
+	});
 };
