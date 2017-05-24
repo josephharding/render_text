@@ -1,12 +1,13 @@
 
 var renderer;
 var mygrid;
+var myquad;
 
 function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
 	}, 20);
-	renderer.draw(mygrid);
+	renderer.draw(mygrid, myquad);
 };
 
 window.onload = function() {
@@ -26,7 +27,9 @@ window.onload = function() {
      
     mygrid = new GlyphGrid(gl, image);
     mygrid.updateText('abc');
-    
+   
+    myquad = new Quad(gl);
+
  		renderTick(); 
 	});
   

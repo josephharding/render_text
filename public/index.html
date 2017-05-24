@@ -1,6 +1,7 @@
 <!doctype HTML>
 <html>
   <head>
+    <script src="quad.js"></script>
     <script src="grid.js"></script>
     <script src="glyphgrid.js"></script>
     <script src="renderer.js"></script>
@@ -11,4 +12,43 @@
     <br/> 
     <input id="str" type="text"></input>
   </body>
+  <script id="clip-space-vs" type="x-shader/x-vertex">#version 300 es
+  
+		in vec2 a_position;
+		in vec2 a_uv;
+		out vec2 v_uv;
+		uniform vec2 u_resolution;
+		
+		void main() {
+    	v_uv = a_uv;
+    	vec2 zeroToOne = a_position / u_resolution;
+    	vec2 zeroToTwo = a_position * 2.0;
+    	vec2 clipSpace = zeroToTwo - 1.0;
+    	gl_Position = vec4(clipSpace, 0, 1);
+  	}
+  </script>
+  <script id="simple-texture-fs" type="x-shader/x-fragment">#version 300 es
+
+		precision mediump float;
+		uniform sampler2D u_image;
+		in vec2 v_uv;
+    out vec4 outColor;
+		
+    void main() {
+			outColor = vec4(0.3, 1, 0.3, 1) * texture(u_image, v_uv);
+			//outColor = vec4(1, 0, 0, 1);
+  	}
+  </script>
+  <script id="other-texture-fs" type="x-shader/x-fragment">#version 300 es
+
+		precision mediump float;
+		uniform sampler2D u_image;
+		in vec2 v_uv;
+    out vec4 outColor;
+		
+    void main() {
+			outColor = vec4(0.1, 0.1, 0.9, 1) * texture(u_image, v_uv);
+			//outColor = vec4(1, 0, 0, 1);
+  	}
+  </script>
 </html>

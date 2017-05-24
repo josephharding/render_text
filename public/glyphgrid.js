@@ -41,7 +41,6 @@ GlyphGrid.prototype.updateText = function(text) {
     }
   }
 
-  console.log("glyph_uv_map:", glyph_uv_map);
   var text_len = text.length;
 
   this._uvs = [];
