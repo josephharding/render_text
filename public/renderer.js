@@ -29,7 +29,7 @@ Renderer.prototype.getFragmentShader = function() {
   in vec2 v_uv; 
 	out vec4 outColor;
 	void main() {
-		outColor = texture(u_image, v_uv);
+		outColor = vec4(0.3, 1, 0.3, 1) * texture(u_image, v_uv);
 		//outColor = vec4(1, 0, 0, 1);
 	}`;
 }

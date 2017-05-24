@@ -4,12 +4,12 @@ Grid.prototype._positions;
 Grid.prototype._uvs;
 
 function Grid(sec_width, sec_height, width, height, uvs, gl) {
-
   this._uvs = uvs;
  	this._positions = [];
 	for(var i = 0; i < width; i++) {
 		for(var j = 0; j < height; j++) {
 			var origin_x = i * sec_width;
+      origin_x -= i * 0.05; // TODO: come back here and think about how we space out characters
 			var origin_y = j * sec_height;	
 			this._positions = this._positions.concat([origin_x, origin_y]);
 			this._positions = this._positions.concat([origin_x + sec_width, origin_y]);

@@ -5,7 +5,6 @@ GlyphGrid.prototype._texture;
 GlyphGrid.prototype._program;
 
 function GlyphGrid(gl, image) {
-  //this._program = program;
   this._texture = gl.createTexture();
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.activeTexture(gl.TEXTURE0);
@@ -24,7 +23,8 @@ GlyphGrid.prototype.updateText = function(text) {
 
   var scaled_glyph_dim = glyphDim / imageDim;
 
-  var alphabet = 'abcdefghijklmnopqrstuvwxyz';
+  // NOTE: space at end of string
+  var alphabet = 'abcdefghijklmnopqrstuvwxyz ';
 
   var x = 0;
   var y = 0;
@@ -40,6 +40,7 @@ GlyphGrid.prototype.updateText = function(text) {
       y++;
     }
   }
+
   console.log("glyph_uv_map:", glyph_uv_map);
   var text_len = text.length;
 
@@ -56,7 +57,8 @@ GlyphGrid.prototype.updateText = function(text) {
     this._uvs = this._uvs.concat([origin_x, origin_y + scaled_glyph_dim]);
     this._uvs = this._uvs.concat([origin_x, origin_y]);		
   }
-  this._grid = new Grid(0.2, 0.2, text_len, 1, this._uvs, gl);
+  // each grid element is 1/8 of the image
+  this._grid = new Grid(scaled_glyph_dim, scaled_glyph_dim, text_len, 1, this._uvs, gl);
 };
 
 GlyphGrid.prototype.draw = function(gl) {
