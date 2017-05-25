@@ -64,13 +64,9 @@ function Renderer() {
 Renderer.prototype.init = function (gl, image) {
   this._gl = gl;	
 
-	var vertexShader = this.getShader("clip-space-vs");
-	var fragmentShader = this.getShader("simple-texture-fs");
-	this.program = this.createProgram(vertexShader, fragmentShader);
-
-	var vertexShaderTwo = this.getShader("clip-space-vs");
-	var fragmentShaderTwo = this.getShader("other-texture-fs");
-	this.other_program = this.createProgram(vertexShaderTwo, fragmentShaderTwo);
+	var basicVS = this.getShader("clip-space-vs");
+	this.program = this.createProgram(basicVS, this.getShader("simple-texture-fs"));
+	this.other_program = this.createProgram(basicVS, this.getShader("other-texture-fs"));
 
   /*
   positionAttributeLocation = this._gl.getAttribLocation(this.program, "a_position");
@@ -91,6 +87,7 @@ Renderer.prototype.init = function (gl, image) {
 };
 
 Renderer.prototype.draw = function (mygrid, myquad) {
+  // the buffer width and height are controlled by the canvas atts width and height 
   this._gl.viewport(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
   /*
@@ -110,15 +107,16 @@ Renderer.prototype.draw = function (mygrid, myquad) {
   
   mygrid.draw(this._gl);
 	
-  this._gl.useProgram(this.other_program);
-  
+  //this._gl.useProgram(this.other_program);
+ 
+  /*
   this._gl.uniform1i(this.imageUniformLocationTwo, 0);
   this._gl.uniform2f(this.resolutionUniformLocationTwo,
 		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
-
-	var tex = gl.createTexture();
+  */
+  /*	
+  var tex = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, tex);
-	//gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -126,4 +124,5 @@ Renderer.prototype.draw = function (mygrid, myquad) {
   gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight, 0);
 
 	myquad.draw(this._gl, tex);
+  */
 };

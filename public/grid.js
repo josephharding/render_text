@@ -19,7 +19,18 @@ function Grid(sec_width, sec_height, width, height, uvs, gl) {
 			this._positions = this._positions.concat([origin_x, origin_y]);
     }
 	}
- 
+
+  /*
+  this._positions = [
+    0, 0,
+    0, .9,
+    .9, .9,
+    0, 0,
+    1, 0,
+    1, 1
+  ];
+  */
+
 	this._vao = gl.createVertexArray();
 	gl.bindVertexArray(this._vao);
 	
