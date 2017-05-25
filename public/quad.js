@@ -12,13 +12,16 @@ function Quad(gl) {
     1, 0,
     1, 1
   ];
+
+  var x = 0.6;
+  var y = 0.3;
  	this._positions = [
-    0, 0,
-    0, 1,
-    1, 1,
-    0, 0,
-    1, 0,
-    1, 1
+    -x, -y,
+    -x, y,
+    x, y,
+    -x, -y,
+    x, -y,
+    x, y
   ];
  
 	this._vao = gl.createVertexArray();

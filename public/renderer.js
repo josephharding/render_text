@@ -96,33 +96,45 @@ Renderer.prototype.draw = function (mygrid, myquad) {
   */
 
 	// Clear the canvas
-	this._gl.clearColor(0, 0, 0, 0);
+	this._gl.clearColor(0, 0, 0, 1);
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT);
+
+  this._gl.blendFunc(this._gl.SRC_ALPHA, this._gl.ONE);
+  this._gl.enable(this._gl.BLEND);
 	
-	this._gl.useProgram(this.program);	
+  this._gl.useProgram(this.program);	
 
   this._gl.uniform1i(this.imageUniformLocation, 0);
   this._gl.uniform2f(this.resolutionUniformLocation,
 		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
-  
+
   mygrid.draw(this._gl);
-	
-  //this._gl.useProgram(this.other_program);
+
+  this._gl.useProgram(this.other_program);
  
-  /*
   this._gl.uniform1i(this.imageUniformLocationTwo, 0);
   this._gl.uniform2f(this.resolutionUniformLocationTwo,
 		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
-  */
-  /*	
+  
   var tex = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, tex);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-  gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight, 0);
+  gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0,
+    this._gl.drawingBufferWidth, this._gl.drawingBufferHeight, 0);
 
-	myquad.draw(this._gl, tex);
-  */
+	this._gl.clearColor(0, 0, 0, 1);
+	this._gl.clear(this._gl.COLOR_BUFFER_BIT);
+	
+  myquad.draw(this._gl, tex);
+
+  this._gl.useProgram(this.program);	
+
+  this._gl.uniform1i(this.imageUniformLocation, 0);
+  this._gl.uniform2f(this.resolutionUniformLocation,
+		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+
+  mygrid.draw(this._gl);
 };
