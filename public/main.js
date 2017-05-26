@@ -7,7 +7,7 @@ var mything;
 function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
-	}, 20);
+	}, 40);
 	renderer.draw(myglyphs, myquad, mything);
 };
 

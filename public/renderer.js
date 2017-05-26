@@ -7,13 +7,18 @@ Renderer.prototype.matrixML;
 Renderer.prototype.mvp;
 
 Renderer.prototype.r;
+Renderer.prototype.startTime;
 
-Renderer.prototype.imageUniformLocation;
-Renderer.prototype.resolutionUniformLocation;
+Renderer.prototype.imageUL;
+Renderer.prototype.resolutionUL;
+Renderer.prototype.scaleUL;
+
 Renderer.prototype.imageUniformLocationTwo;
 Renderer.prototype.resolutionUniformLocationTwo;
+Renderer.prototype.timeUL;
 
 function Renderer() {
+  this.startTime = Date.now();
 }
 
 Renderer.prototype.getShader = function (id) {
@@ -64,8 +69,9 @@ Renderer.prototype.init = function (gl, image) {
 
 	this.program = this.createProgram(
     this.getShader("offset-vs"), this.getShader("simple-texture-fs"));
-	this.other_program = this.createProgram(
-    this.getShader("clip-space-vs"), this.getShader("other-texture-fs"));
+	
+  this.other_program = this.createProgram(
+    this.getShader("simple-vs"), this.getShader("other-texture-fs"));
 
 	this.three_program = this.createProgram(
     this.getShader("3d-vs"), this.getShader("3d-fs"));
@@ -88,10 +94,12 @@ Renderer.prototype.init = function (gl, image) {
   this._gl.bindAttribLocation(this.program, 0, "a_uv"); 
   */ 
 
-  this.resolutionUniformLocation = this._gl.getUniformLocation(this.program, "u_resolution"); 
-  this.imageUniformLocation = this._gl.getUniformLocation(this.program, "u_image"); 
+  this.resolutionUL = this._gl.getUniformLocation(this.program, "u_resolution"); 
+  this.scaleUL = this._gl.getUniformLocation(this.program, "u_scale"); 
+  this.imageUL = this._gl.getUniformLocation(this.program, "u_image"); 
   
   this.resolutionUniformLocationTwo = this._gl.getUniformLocation(this.other_program, "u_resolution"); 
+  this.timeUL = this._gl.getUniformLocation(this.other_program, "u_time"); 
   this.imageUniformLocationTwo = this._gl.getUniformLocation(this.other_program, "u_image"); 
 };
 
@@ -99,6 +107,7 @@ Renderer.prototype.copyDrawBufferToTexture = function() {
   this._gl.useProgram(this.other_program);
  
   this._gl.uniform1i(this.imageUniformLocationTwo, 0);
+  this._gl.uniform1f(this.timeUL, Date.now() - this.startTime);
   this._gl.uniform2f(this.resolutionUniformLocationTwo,
 		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
   
@@ -127,15 +136,13 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
 	this._gl.clearColor(0, 0, 0, 1);
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT);
 
-  this._gl.blendFunc(this._gl.SRC_ALPHA, this._gl.ONE);
   this._gl.enable(this._gl.BLEND);
+  this._gl.blendFunc(this._gl.SRC_ALPHA, this._gl.ONE);
+  
+	this._gl.useProgram(this.program);	
 
-  /*
-  this._gl.useProgram(this.program);	
-
-  this._gl.uniform1i(this.imageUniformLocation, 0);
-  this._gl.uniform2f(this.resolutionUniformLocation,
-		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+  this._gl.uniform1i(this.imageUL, 0);
+  this._gl.uniform2f(this.resolutionUL, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
   mygrid.draw(this._gl);
 
@@ -148,31 +155,36 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
 
   this._gl.useProgram(this.program);	
 
-  this._gl.uniform1i(this.imageUniformLocation, 0);
-  this._gl.uniform2f(this.resolutionUniformLocation,
-		this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+  this._gl.uniform1i(this.imageUL, 0);
+  this._gl.uniform2f(this.scaleUL, 0.5, 0.5);
+  this._gl.uniform2f(this.resolutionUL, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
   mygrid.draw(this._gl);
-  */
 
-  // start drawing test 3D scene
-  this._gl.useProgram(this.three_program);	
-
-  mat4.perspective(this.mvp, glMatrix.toRadian(120),
-    this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 0, 10);
- 
   /*
   mat4.ortho(this.mvp, -this._gl.drawingBufferWidth/2, this._gl.drawingBufferWidth/2, 
     -this._gl.drawingBufferHeight/2, this._gl.drawingBufferHeight/2, 0, 10);
   */
+  
+	// start drawing test 3D scene
+	this._gl.useProgram(this.three_program);	
 
+  mat4.perspective(this.mvp, glMatrix.toRadian(120),
+    this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 0, 10);
+ 
   mat4.translate(this.mvp, this.mvp, vec4.fromValues(0, 0, -30, 0));
   mat4.scale(this.mvp, this.mvp, vec3.fromValues(20, 20, 1));
+  mat4.rotate(this.mvp, this.mvp, glMatrix.toRadian(20), vec3.fromValues(1, 0, 0));
   mat4.rotate(this.mvp, this.mvp, glMatrix.toRadian(this.r), vec3.fromValues(0, 1, 0));
   
   this._gl.uniformMatrix4fv(this.matrixUL, false, this.mvp);
-
+	
+	this._gl.enable(this._gl.CULL_FACE);
+	this._gl.cullFace(this._gl.BACK);
+ 
   mything.draw(this._gl);
-
-  this.r++;
+  
+	this._gl.disable(this._gl.CULL_FACE);
+	
+	this.r++;
 };

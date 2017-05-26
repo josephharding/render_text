@@ -13,8 +13,8 @@ function Quad(gl) {
     1, 1
   ];
 
-  var x = 0.6;
-  var y = 0.3;
+  var x = 1;
+  var y = 1;
  	this._positions = [
     -x, -y,
     -x, y,
