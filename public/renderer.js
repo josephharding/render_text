@@ -9,6 +9,9 @@ Renderer.prototype.resolutionUniformLocationTwo;
 //var positionAttributeLocation;
 //var uvAttributeLocation;
 
+function Renderer() {
+}
+
 Renderer.prototype.getShader = function (id) {
 	var shaderScript = document.getElementById(id);
 	if (!shaderScript) {
@@ -57,23 +60,20 @@ Renderer.prototype.createProgram = function(vertexShader, fragmentShader) {
   this._gl.deleteProgram(program);
 }
 
-function Renderer() {
-  console.log("you made a renderer!");
-}
-
 Renderer.prototype.init = function (gl, image) {
   this._gl = gl;	
 
-	var basicVS = this.getShader("clip-space-vs");
-	this.program = this.createProgram(basicVS, this.getShader("simple-texture-fs"));
-	this.other_program = this.createProgram(basicVS, this.getShader("other-texture-fs"));
+	this.program = this.createProgram(this.getShader("offset-vs"), this.getShader("simple-texture-fs"));
+	this.other_program = this.createProgram(this.getShader("clip-space-vs"), this.getShader("other-texture-fs"));
 
   /*
-  positionAttributeLocation = this._gl.getAttribLocation(this.program, "a_position");
-  uvAttributeLocation = this._gl.getAttribLocation(this.program, "a_uv");
+  var positionAttributeLocation = this._gl.getAttribLocation(this.program, "a_position");
+  var uvAttributeLocation = this._gl.getAttribLocation(this.program, "a_uv");
+  var offsetAttributeLocation = this._gl.getAttribLocation(this.program, "a_offset");
   console.log("positionAttributeLocation:", positionAttributeLocation);
   console.log("uvAttributeLocation:", uvAttributeLocation);
-  */
+  console.log("offsetAttributeLocation:", offsetAttributeLocation);
+  */ 
   /*
   this._gl.bindAttribLocation(this.program, 1, "a_position");
   this._gl.bindAttribLocation(this.program, 0, "a_uv"); 

@@ -1,17 +1,16 @@
 
 var renderer;
-var mygrid;
+var myglyphs;
 var myquad;
 
 function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
 	}, 20);
-	renderer.draw(mygrid, myquad);
+	renderer.draw(myglyphs, myquad);
 };
 
-window.onload = function() {
-  
+window.onload = function() {  
   var canvas = document.getElementById("canvas");
   gl = canvas.getContext("webgl2");
   if(!gl) {
@@ -25,8 +24,8 @@ window.onload = function() {
     
     renderer.init(gl, image);
      
-    mygrid = new GlyphGrid(gl, image);
-    mygrid.updateText('abc');
+    myglyphs = new GlyphGrid(gl, image, 32); // each glyph is 32 px square
+    myglyphs.updateText('abc');
    
     myquad = new Quad(gl);
 
@@ -34,6 +33,6 @@ window.onload = function() {
 	});
   
   document.getElementById("str").addEventListener("input", function(e) {
-    mygrid.updateText(e.currentTarget.value);
+    myglyphs.updateText(e.currentTarget.value);
   });
 };

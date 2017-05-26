@@ -3,9 +3,17 @@ GlyphGrid.prototype._grid;
 GlyphGrid.prototype._uvs;
 GlyphGrid.prototype._texture;
 GlyphGrid.prototype._program;
+GlyphGrid.prototype._image_dim;
+GlyphGrid.prototype._glyph_dim;
 
-function GlyphGrid(gl, image) {
+function GlyphGrid(gl, image, glyph_dim) {
   this._texture = gl.createTexture();
+  this._image_dim = image.height;
+  if(image.width != this._image_dim) {
+    console.log("error: glyph grid assumes square images!");
+  }
+  this._glyph_dim = glyph_dim;
+
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, this._texture);
@@ -18,10 +26,7 @@ function GlyphGrid(gl, image) {
 }
 
 GlyphGrid.prototype.updateText = function(text) {
-  var glyphDim = 32;
-  var imageDim = 256;
-
-  var scaled_glyph_dim = glyphDim / imageDim;
+  var scaled_glyph_dim = this._glyph_dim / this._image_dim;
 
   // NOTE: space at end of string
   var alphabet = 'abcdefghijklmnopqrstuvwxyz ';
@@ -35,16 +40,14 @@ GlyphGrid.prototype.updateText = function(text) {
       y: y
     };
     x += 1; 
-    if(x * glyphDim == imageDim) {
+    if(x * this._glyph_dim == this._image_dim) {
       x = 0;
       y++;
     }
   }
 
-  var text_len = text.length;
-
   this._uvs = [];
-	for(var i = 0; i < text_len; i++) {
+	for(var i = 0; i < text.length; i++) {
     var coords = glyph_uv_map[text[i]];
     var origin_x = coords.x * scaled_glyph_dim;
     var origin_y = 1 - (coords.y * scaled_glyph_dim) - scaled_glyph_dim;
@@ -56,8 +59,8 @@ GlyphGrid.prototype.updateText = function(text) {
     this._uvs = this._uvs.concat([origin_x, origin_y + scaled_glyph_dim]);
     this._uvs = this._uvs.concat([origin_x, origin_y]);		
   }
-  // each grid element is 1/8 of the image
-  this._grid = new Grid(scaled_glyph_dim, scaled_glyph_dim, text_len, 1, this._uvs, gl);
+  // TODO - we don't handle strings longer than 8 characters right now
+  this._grid = new Grid(scaled_glyph_dim, scaled_glyph_dim, text.length, 1, this._uvs, gl);
 };
 
 GlyphGrid.prototype.draw = function(gl) {
