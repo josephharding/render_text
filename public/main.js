@@ -11,6 +11,19 @@ function renderTick() {
 	renderer.draw(myglyphs, myquad, mything);
 };
 
+function loadResource(path) {
+  return new Promise((resolve, reject) => {
+    var request = new XMLHttpRequest();
+    request.open("GET", path);
+    request.onreadystatechange = function (event) {
+        if (event.target.readyState == 4) {
+            resolve(event.target.responseText);
+        }
+    };
+    request.send();
+  });
+}
+
 window.onload = function() {  
   var canvas = document.getElementById("canvas");
   gl = canvas.getContext("webgl2");
@@ -30,9 +43,11 @@ window.onload = function() {
    
     myquad = new Quad(gl);
 
-    mything = new Thing(gl);
-
- 		renderTick(); 
+		loadResource('test.json')
+    .then(data => {
+    	mything = new Thing(gl, JSON.parse(data));
+ 			renderTick(); 
+		});
 	});
   
   document.getElementById("str").addEventListener("input", function(e) {
