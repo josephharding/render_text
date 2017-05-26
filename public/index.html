@@ -1,6 +1,8 @@
 <!doctype HTML>
 <html>
-  <head>
+  <head> 
+    <script src="lib/gl-matrix-min.js"></script>
+    <script src="thing.js"></script>
     <script src="quad.js"></script>
     <script src="grid.js"></script>
     <script src="glyphgrid.js"></script>
@@ -12,6 +14,26 @@
     <br/> 
     <input id="str" type="text"></input>
   </body>
+  <script id="3d-vs" type="x-shader/x-vertex">#version 300 es
+
+    uniform mat4 u_matrix;
+
+		in vec4 a_position;
+			
+		void main() {
+    	gl_Position = u_matrix * a_position;
+  	}
+  </script>
+  <script id="3d-fs" type="x-shader/x-fragment">#version 300 es
+
+		precision mediump float;
+		 
+    out vec4 outColor;
+		
+    void main() {
+			outColor = vec4(1, 0, 0, 1);
+  	}
+  </script>
   <script id="offset-vs" type="x-shader/x-vertex">#version 300 es
   
 		in vec2 a_position;

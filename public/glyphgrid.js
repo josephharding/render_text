@@ -48,16 +48,20 @@ GlyphGrid.prototype.updateText = function(text) {
 
   this._uvs = [];
 	for(var i = 0; i < text.length; i++) {
-    var coords = glyph_uv_map[text[i]];
-    var origin_x = coords.x * scaled_glyph_dim;
-    var origin_y = 1 - (coords.y * scaled_glyph_dim) - scaled_glyph_dim;
+    if(text[i] in glyph_uv_map) {
+      var coords = glyph_uv_map[text[i]];
+      var origin_x = coords.x * scaled_glyph_dim;
+      var origin_y = 1 - (coords.y * scaled_glyph_dim) - scaled_glyph_dim;
 
-    this._uvs = this._uvs.concat([origin_x, origin_y]);
-    this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y]);
-    this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y + scaled_glyph_dim]);
-    this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y + scaled_glyph_dim]);
-    this._uvs = this._uvs.concat([origin_x, origin_y + scaled_glyph_dim]);
-    this._uvs = this._uvs.concat([origin_x, origin_y]);		
+      this._uvs = this._uvs.concat([origin_x, origin_y]);
+      this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y]);
+      this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y + scaled_glyph_dim]);
+      this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y + scaled_glyph_dim]);
+      this._uvs = this._uvs.concat([origin_x, origin_y + scaled_glyph_dim]);
+      this._uvs = this._uvs.concat([origin_x, origin_y]);		
+    } else {
+      console.log("error: specified a character not in the glyph texture atlas!");
+    }
   }
   // TODO - we don't handle strings longer than 8 characters right now
   this._grid = new Grid(scaled_glyph_dim, scaled_glyph_dim, text.length, 1, this._uvs, gl);

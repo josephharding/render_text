@@ -2,12 +2,13 @@
 var renderer;
 var myglyphs;
 var myquad;
+var mything;
 
 function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
 	}, 20);
-	renderer.draw(myglyphs, myquad);
+	renderer.draw(myglyphs, myquad, mything);
 };
 
 window.onload = function() {  
@@ -28,6 +29,8 @@ window.onload = function() {
     myglyphs.updateText('abc');
    
     myquad = new Quad(gl);
+
+    mything = new Thing(gl);
 
  		renderTick(); 
 	});
