@@ -38,14 +38,21 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         print("### Mesh Export Script Start ###")
 
-        verts = []
-        for poly in bpy.data.meshes['Cube'].polygons:
-            for vert_index in poly.vertices:
-                verts.append(bpy.data.meshes['Cube'].vertices[vert_index].co)
+        if len(bpy.context.selected_objects) > 0:
+            active_data = bpy.context.selected_objects[0].data
 
-        print("### Mesh Export Script End ###")
+            verts = []
+            for poly in active_data.polygons:
+                for vert_index in poly.vertices:
+                    verts.append(active_data.vertices[vert_index].co)
+
+            print("### Mesh Export Script End ###")
+            
+            self.write_file(verts) 
         
-        self.write_file(verts) 
+        else:
+            self.report({'ERROR'}, 'please select an oject to export')
+
         # this lets blender know the operator finished successfully. 
         return {'FINISHED'}
 

@@ -66,8 +66,8 @@ Renderer.prototype.createProgram = function(vertexShader, fragmentShader) {
 
 Renderer.prototype.init = function (gl, image) {
   this._gl = gl;	
-
-	this.program = this.createProgram(
+	
+  this.program = this.createProgram(
     this.getShader("offset-vs"), this.getShader("simple-texture-fs"));
 	
   this.other_program = this.createProgram(
@@ -135,17 +135,17 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
 	// Clear the canvas
 	this._gl.clearColor(0, 0, 0, 1);
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT);
-
-  this._gl.enable(this._gl.BLEND);
-  this._gl.blendFunc(this._gl.SRC_ALPHA, this._gl.ONE);
-  
+ 
 	this._gl.useProgram(this.program);	
 
   this._gl.uniform1i(this.imageUL, 0);
   this._gl.uniform2f(this.resolutionUL, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
+  this._gl.enable(this._gl.BLEND);
+  this._gl.blendFunc(this._gl.SRC_ALPHA, this._gl.ONE);
+  
   mygrid.draw(this._gl);
-
+ 
   var tex = this.copyDrawBufferToTexture();
 
 	this._gl.clearColor(0, 0, 0, 1);
@@ -161,6 +161,7 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
 
   mygrid.draw(this._gl);
 
+  this._gl.disable(this._gl.BLEND);
   /*
   mat4.ortho(this.mvp, -this._gl.drawingBufferWidth/2, this._gl.drawingBufferWidth/2, 
     -this._gl.drawingBufferHeight/2, this._gl.drawingBufferHeight/2, 0, 10);
@@ -177,13 +178,19 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
   mat4.rotate(this.mvp, this.mvp, glMatrix.toRadian(20), vec3.fromValues(1, 0, 0));
   mat4.rotate(this.mvp, this.mvp, glMatrix.toRadian(this.r), vec3.fromValues(0, 1, 0));
   
-  this._gl.uniformMatrix4fv(this.matrixUL, false, this.mvp);
-	
-	this._gl.enable(this._gl.CULL_FACE);
-	this._gl.cullFace(this._gl.BACK);
+  this._gl.uniformMatrix4fv(this.matrixUL, false, this.mvp);	
  
+  this._gl.enable(this._gl.CULL_FACE);
+	this._gl.cullFace(this._gl.BACK);
+
+  /*
+  this._gl.clear(this._gl.DEPTH_BUFFER_BIT);
+  this._gl.enable(this._gl.DEPTH_TEST);
+  */
+
   mything.draw(this._gl);
   
+  //this._gl.disable(this._gl.DEPTH_TEST);
 	this._gl.disable(this._gl.CULL_FACE);
 	
 	this.r++;
