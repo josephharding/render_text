@@ -132,9 +132,8 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
   console.log("this._gl.drawingBufferHeight:", this._gl.drawingBufferHeight); // 150
   */
 
-	// Clear the canvas
 	this._gl.clearColor(0, 0, 0, 1);
-	this._gl.clear(this._gl.COLOR_BUFFER_BIT);
+	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
  
 	this._gl.useProgram(this.program);	
 
@@ -162,7 +161,7 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
   mygrid.draw(this._gl);
 
   this._gl.disable(this._gl.BLEND);
-  /*
+	/*
   mat4.ortho(this.mvp, -this._gl.drawingBufferWidth/2, this._gl.drawingBufferWidth/2, 
     -this._gl.drawingBufferHeight/2, this._gl.drawingBufferHeight/2, 0, 10);
   */
@@ -171,7 +170,7 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
 	this._gl.useProgram(this.three_program);	
 
   mat4.perspective(this.mvp, glMatrix.toRadian(120),
-    this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 0, 10);
+    this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 1, 100);
  
   mat4.translate(this.mvp, this.mvp, vec4.fromValues(0, 0, -30, 0));
   mat4.scale(this.mvp, this.mvp, vec3.fromValues(20, 20, 1));
@@ -180,17 +179,13 @@ Renderer.prototype.draw = function (mygrid, myquad, mything) {
   
   this._gl.uniformMatrix4fv(this.matrixUL, false, this.mvp);	
  
-  this._gl.enable(this._gl.CULL_FACE);
+  this._gl.enable(this._gl.DEPTH_TEST); 
+	this._gl.enable(this._gl.CULL_FACE);
 	this._gl.cullFace(this._gl.BACK);
-
-  /*
-  this._gl.clear(this._gl.DEPTH_BUFFER_BIT);
-  this._gl.enable(this._gl.DEPTH_TEST);
-  */
 
   mything.draw(this._gl);
   
-  //this._gl.disable(this._gl.DEPTH_TEST);
+  this._gl.disable(this._gl.DEPTH_TEST);
 	this._gl.disable(this._gl.CULL_FACE);
 	
 	this.r++;
