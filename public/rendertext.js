@@ -36,13 +36,14 @@ RenderText.prototype.draw = function(gl) {
   gl.useProgram(this._glyph_program);
 
   gl.uniform1i(this.imageUL, 0);
+  gl.uniform2f(this.scaleUL, 0.5, 0.5);
 	gl.uniform2f(this.resolutionUL, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
  
 	this._glyph.draw(gl);
- 
+
 	gl.useProgram(this._quad_program);
 
   gl.uniform1i(this.q_imageUL, 0);
@@ -70,6 +71,6 @@ RenderText.prototype.draw = function(gl) {
   gl.uniform2f(this.resolutionUL, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
   this._glyph.draw(gl);
-
-  gl.disable(gl.BLEND);
+  
+	gl.disable(gl.BLEND);
 };
