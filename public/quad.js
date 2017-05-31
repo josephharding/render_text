@@ -23,7 +23,7 @@ function Quad(gl) {
     x, -y,
     x, y
   ];
- 
+  
 	this._vao = gl.createVertexArray();
 	gl.bindVertexArray(this._vao);
 	
@@ -41,9 +41,15 @@ function Quad(gl) {
 }
 
 Quad.prototype.draw = function(gl, texture) {
-
   gl.bindTexture(gl.TEXTURE_2D, texture);
   
   gl.bindVertexArray(this._vao);
+  
+  gl.enableVertexAttribArray(0);
+  gl.enableVertexAttribArray(1);
+
   gl.drawArrays(gl.TRIANGLES, 0, this._positions.length / 2);
+
+  gl.disableVertexAttribArray(0);
+  gl.disableVertexAttribArray(1);
 };

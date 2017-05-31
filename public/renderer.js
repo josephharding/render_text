@@ -9,12 +9,14 @@ Renderer.prototype.r;
 function Renderer() {
 }
 
-Renderer.prototype.init = function (gl, image) {
+Renderer.prototype.init = function (gl) {
   this._gl = gl;	
 
 	this.three_program = createProgram(gl, getShader(gl, "3d-vs"), getShader(gl, "3d-fs"));
 
   this.matrixUL = this._gl.getUniformLocation(this.three_program, "u_matrix");
+
+  console.log("t a_position:", gl.getAttribLocation(this.three_program, "a_position"));
 
   this.r = 0;
   this.mvp = mat4.create();
@@ -51,7 +53,7 @@ Renderer.prototype.draw = function (text, mything) {
 	this._gl.enable(this._gl.CULL_FACE);
 	this._gl.cullFace(this._gl.BACK);
 
-  mything.draw(this._gl);
+  mything.draw(this._gl, this.three_program);
   
   this._gl.disable(this._gl.DEPTH_TEST);
 	this._gl.disable(this._gl.CULL_FACE);

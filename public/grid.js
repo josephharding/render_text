@@ -27,7 +27,6 @@ function Grid(sec_width, sec_height, width, height, uvs, gl) {
     }
 	}
 
-
 	this._vao = gl.createVertexArray();
 	gl.bindVertexArray(this._vao);
 	
@@ -48,14 +47,18 @@ function Grid(sec_width, sec_height, width, height, uvs, gl) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._offset), gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-  /*
-  gl.bindAttribLocation(program, 0, "a_position");
-  gl.bindAttribLocation(program, 1, "a_uv");
-  */
 }
 
 Grid.prototype.draw = function(gl) {
-	gl.bindVertexArray(this._vao);
+  gl.bindVertexArray(this._vao);
+  
+  gl.enableVertexAttribArray(0);
+  gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(2);
+	 
   gl.drawArrays(gl.TRIANGLES, 0, this._positions.length / 2);
+  
+  gl.disableVertexAttribArray(0);
+  gl.disableVertexAttribArray(1);
+  gl.disableVertexAttribArray(2);  
 };

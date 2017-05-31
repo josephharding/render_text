@@ -41,14 +41,22 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
         if len(bpy.context.selected_objects) > 0:
             active_data = bpy.context.selected_objects[0].data
 
+            indices = []
             verts = []
+            uvs = []
             for poly in active_data.polygons:
                 for vert_index in poly.vertices:
-                    verts.append(active_data.vertices[vert_index].co)
+                    indices.append(vert_index)
+
+            for vert in active_data.vertices:
+                verts.append(vert.co)
+
+            for uv in active_data.uv_layers.active.data:
+                uvs.append(uv.uv)
 
             print("### Mesh Export Script End ###")
             
-            self.write_file(verts) 
+            self.write_file(indices, verts, uvs) 
         
         else:
             self.report({'ERROR'}, 'please select an oject to export')
@@ -58,7 +66,7 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
 
 
     # print out the mesh data to petgame xml
-    def write_file(self, verts):
+    def write_file(self, indices, verts, uvs):
         filepath = self.filepath
         filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
 
@@ -67,6 +75,15 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
         file = open(filepath, "w")
         fw = file.write
 
+        fw('{"indices":')
+        fw('[')
+        for i, val in enumerate(indices):
+            fw('{i}'.format(i=val))
+            if i < len(indices) - 1:
+                fw(',\n')
+
+        fw(']')
+        fw(', "verts":')
         fw('[')
         for i, val in enumerate(verts):
             fw('{x},{y},{z}'.format(x=val.x, y=val.y, z=val.z))
@@ -74,6 +91,15 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
                 fw(',\n')
 
         fw(']')
+        fw(', "uvs":')
+        fw('[')
+        for i, val in enumerate(uvs):
+            fw('{u},{v}'.format(u=val.x, v=val.y))
+            if i < len(uvs) - 1:
+                fw(',\n')
+
+        fw(']')
+        fw('}')
         file.close()
 
 
