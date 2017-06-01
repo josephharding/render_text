@@ -43,6 +43,7 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
 
             indices = []
             verts = []
+            normals = []
             uvs = []
 
             bm = bmesh.from_edit_mesh(active_data)
@@ -57,11 +58,12 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
             for f in bm.faces:
                 for loop in f.loops:
                     indices.append(i)
-                    uvs.append(loop[uv_layer].uv)
                     verts.append(loop.vert.co)
+                    normals.append(loop.vert.normal)
+                    uvs.append(loop[uv_layer].uv)
                     i = i + 1
  
-            self.write_file(indices, verts, uvs) 
+            self.write_file(indices, verts, normals, uvs) 
         
         else:
             self.report({'ERROR'}, 'please select an oject to export')
@@ -72,7 +74,7 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
 
 
     # print out the mesh data to petgame xml
-    def write_file(self, indices, verts, uvs):
+    def write_file(self, indices, verts, normals, uvs):
         filepath = self.filepath
         filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
 
@@ -94,6 +96,14 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
         for i, val in enumerate(verts):
             fw('{x},{y},{z}'.format(x=val.x, y=val.y, z=val.z))
             if i < len(verts) - 1:
+                fw(',')
+
+        fw(']')
+        fw(', "normals":')
+        fw('[')
+        for i, val in enumerate(normals):
+            fw('{x},{y},{z}'.format(x=val.x, y=val.y, z=val.z))
+            if i < len(normals) - 1:
                 fw(',')
 
         fw(']')
