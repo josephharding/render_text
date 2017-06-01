@@ -5,6 +5,8 @@ Thing.prototype._element_count;
 function Thing(gl, data, image) {
  	this._element_count = data['indices'].length;
 
+  this.offset = vec3.create();
+
   this._texture = gl.createTexture();
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.activeTexture(gl.TEXTURE0);
@@ -25,17 +27,27 @@ function Thing(gl, data, image) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data['verts']), gl.STATIC_DRAW);
   
-  gl.enableVertexAttribArray(1);
-  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0); 
+  gl.enableVertexAttribArray(2);
+  gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0); 
 	
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data['uvs']), gl.STATIC_DRAW); 
   
 	gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); 
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data['normals']), gl.STATIC_DRAW); 
+  
+	gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);   
 }
 
-Thing.prototype.draw = function(gl) { 
+Thing.prototype.setOffset = function(offsetUL, x, y, z) { 
+  vec3.set(this.offset, x, y, z);
+};
+  
+Thing.prototype.draw = function(offsetUL, gl) { 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, this._texture);
 
@@ -43,9 +55,12 @@ Thing.prototype.draw = function(gl) {
 
   gl.enableVertexAttribArray(0);
   gl.enableVertexAttribArray(1);
-  
+  gl.enableVertexAttribArray(2);
+ 
+  gl.uniform3fv(offsetUL, this.offset);
   gl.drawElements(gl.TRIANGLES, this._element_count, gl.UNSIGNED_SHORT, 0);
   
   gl.disableVertexAttribArray(0);
   gl.disableVertexAttribArray(1);
+  gl.disableVertexAttribArray(2);
 };

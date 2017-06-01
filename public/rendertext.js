@@ -23,10 +23,12 @@ function RenderText(gl, image, image_dim) {
   this.timeUL = gl.getUniformLocation(this._quad_program, "u_time");
   this.q_imageUL = gl.getUniformLocation(this._quad_program, "u_image");
 
+  /*
   console.log("g a_position:", gl.getAttribLocation(this._glyph_program, "a_position"));
   console.log("g a_uv:", gl.getAttribLocation(this._glyph_program, "a_uv"));
   console.log("g a_offset:", gl.getAttribLocation(this._glyph_program, "a_offset"));
- 
+  */
+
   this._glyph = new GlyphGrid(gl, image, image_dim); // actual text mesh and texture
 	this._quad = new Quad(gl); // canvas for doing screen capture and applying blur effect
 

@@ -17,16 +17,22 @@
   </body>
   <script id="3d-vs" type="x-shader/x-vertex">#version 300 es
 
-    uniform mat4 u_matrix;
+    uniform mat4 u_worldViewProjection;
+    uniform mat4 u_world;
+    uniform vec3 u_offset;
 
 		in vec2 a_uv;
 		in vec4 a_position;
-		
+	  in vec3 a_normal;
+
 		out vec2 v_uv;
-		
+	  out vec3 v_normal;
+
 		void main() {
      	v_uv = a_uv; 
-			gl_Position = u_matrix * a_position;
+     	v_normal = mat3(u_world) * a_normal; 
+			gl_Position = u_worldViewProjection * a_position;
+			gl_Position.xyz += u_offset;
   	}
   </script>
   <script id="3d-fs" type="x-shader/x-fragment">#version 300 es
@@ -34,13 +40,17 @@
 		precision mediump float;
    
 	 	in vec2 v_uv;
+	 	in vec3 v_normal;
 
 		uniform sampler2D u_image;
+    uniform vec3 u_light;
 	
     out vec4 outColor;
 		
     void main() {
+      float light = dot(normalize(v_normal), u_light);
 			outColor = texture(u_image, v_uv);
+      outColor.rgb *= light;
   	}
   </script>
   <script id="offset-vs" type="x-shader/x-vertex">#version 300 es

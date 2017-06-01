@@ -2,12 +2,13 @@
 var _renderer;
 var _text;
 var _thing;
+var _thingTwo;
 
 function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
 	}, 40);
-	_renderer.draw(_text, _thing);
+	_renderer.draw(_text, _thing, _thingTwo);
 };
 
 function loadResource(path) {
@@ -85,17 +86,21 @@ window.onload = function() {
   }
   _renderer = new Renderer();
 
-  Promise.all([loadResource('test.json'), loadImage('alphabet.png'), loadImage('colors.png')])
+  Promise.all([
+    loadResource('test.json'),
+    loadImage('alphabet.png'),
+    loadImage('sparrow_texture.png')
+  ])
   .then(data => {
     _thing = new Thing(gl, JSON.parse(data[0]), data[2]);
+    _thingTwo = new Thing(gl, JSON.parse(data[0]), data[2]);
     
     _text = new RenderText(gl, data[1], 32);
     _text.updateText('abc');
     
     _renderer.init(gl);
     renderTick(); 
-  });
-  
+  }); 
   
   document.getElementById("str").addEventListener("input", function(e) {
     _text.updateText(e.currentTarget.value);
