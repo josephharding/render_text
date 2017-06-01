@@ -44,23 +44,29 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
             indices = []
             verts = []
             uvs = []
-            for poly in active_data.polygons:
-                for vert_index in poly.vertices:
-                    indices.append(vert_index)
 
-            for vert in active_data.vertices:
-                verts.append(vert.co)
+            bm = bmesh.from_edit_mesh(active_data)
 
-            for uv in active_data.uv_layers.active.data:
-                uvs.append(uv.uv)
+            bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
 
-            print("### Mesh Export Script End ###")
+            uv_layer = bm.loops.layers.uv.active
+            if not uv_layer: 
+                self.report({'ERROR'}, 'please create a uv layer!')
             
+            i = 0 # TODO - so is there any advantage to using these indices?
+            for f in bm.faces:
+                for loop in f.loops:
+                    indices.append(i)
+                    uvs.append(loop[uv_layer].uv)
+                    verts.append(loop.vert.co)
+                    i = i + 1
+ 
             self.write_file(indices, verts, uvs) 
         
         else:
             self.report({'ERROR'}, 'please select an oject to export')
 
+        print("### Mesh Export Script End ###")
         # this lets blender know the operator finished successfully. 
         return {'FINISHED'}
 
@@ -80,7 +86,7 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
         for i, val in enumerate(indices):
             fw('{i}'.format(i=val))
             if i < len(indices) - 1:
-                fw(',\n')
+                fw(',')
 
         fw(']')
         fw(', "verts":')
@@ -88,15 +94,15 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
         for i, val in enumerate(verts):
             fw('{x},{y},{z}'.format(x=val.x, y=val.y, z=val.z))
             if i < len(verts) - 1:
-                fw(',\n')
+                fw(',')
 
         fw(']')
         fw(', "uvs":')
         fw('[')
         for i, val in enumerate(uvs):
-            fw('{u},{v}'.format(u=val.x, v=val.y))
+            fw('{u},{v}'.format(u=round(val.x, 2), v=round(val.y, 2)))
             if i < len(uvs) - 1:
-                fw(',\n')
+                fw(',')
 
         fw(']')
         fw('}')

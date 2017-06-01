@@ -15,10 +15,13 @@ Renderer.prototype.init = function (gl) {
 	this.three_program = createProgram(gl, getShader(gl, "3d-vs"), getShader(gl, "3d-fs"));
 
   this.matrixUL = this._gl.getUniformLocation(this.three_program, "u_matrix");
+  this.imageUL = this._gl.getUniformLocation(this.three_program, "u_image");
 
+	/*
   console.log("t a_position:", gl.getAttribLocation(this.three_program, "a_position"));
-
-  this.r = 0;
+  console.log("t a_uv:", gl.getAttribLocation(this.three_program, "a_uv"));
+ 	*/ 
+	this.r = 0;
   this.mvp = mat4.create();
 };
 
@@ -48,15 +51,16 @@ Renderer.prototype.draw = function (text, mything) {
   mat4.rotate(this.mvp, this.mvp, glMatrix.toRadian(this.r), vec3.fromValues(0, 1, 0));
   
   this._gl.uniformMatrix4fv(this.matrixUL, false, this.mvp);	
- 
-  this._gl.enable(this._gl.DEPTH_TEST); 
-	this._gl.enable(this._gl.CULL_FACE);
-	this._gl.cullFace(this._gl.BACK);
+  this._gl.uniform1i(this.imageUL, 0);	
 
-  mything.draw(this._gl, this.three_program);
+  this._gl.enable(this._gl.DEPTH_TEST); 
+	//this._gl.enable(this._gl.CULL_FACE);
+	//this._gl.cullFace(this._gl.BACK);
+
+  mything.draw(this._gl);
   
   this._gl.disable(this._gl.DEPTH_TEST);
-	this._gl.disable(this._gl.CULL_FACE);
+	//this._gl.disable(this._gl.CULL_FACE);
 	
 	this.r++;
 };
