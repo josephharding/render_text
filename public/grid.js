@@ -8,8 +8,8 @@ function Grid(sec_width, sec_height, width, height, uvs, gl) {
  	this._positions = [];
   this._offset = [];
   
-  var x = -1;
-  var y = 0.6;
+  var x = -.6;
+  var y = 0;
 	
   for(var i = 0; i < width; i++) {
 		for(var j = 0; j < height; j++) {

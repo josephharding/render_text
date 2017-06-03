@@ -10,10 +10,10 @@ function RenderText(gl, image, image_dim) {
   this.startTime = Date.now();
  
   this._glyph_program = createProgram(gl,
-    getShader(gl, "offset-vs"), getShader(gl, "simple-texture-fs"));
+    getShader(gl, "glyph-grid-vs"), getShader(gl, "glyph-grid-fs"));
 
   this._quad_program = createProgram(gl,
-    getShader(gl, "simple-vs"), getShader(gl, "other-texture-fs"));
+    getShader(gl, "text-quad-vs"), getShader(gl, "text-quad-fs"));
 
   this.resolutionUL = gl.getUniformLocation(this._glyph_program, "u_resolution");
   this.scaleUL = gl.getUniformLocation(this._glyph_program, "u_scale");
@@ -33,6 +33,30 @@ function RenderText(gl, image, image_dim) {
 	this._quad = new Quad(gl); // canvas for doing screen capture and applying blur effect
 
 	this._texture = gl.createTexture();
+
+	// create the frame buffer where the render text is drawn in the first pass	
+	this.framebuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+
+  gl.bindTexture(gl.TEXTURE_2D, this._texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.drawingBufferWidth, gl.drawingBufferHeight,
+    0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+	var renderbuffer = gl.createRenderbuffer();
+	gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+	gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16,
+    gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this._texture, 0);
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
+
+	gl.bindTexture(gl.TEXTURE_2D, null);
+	gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
 
 RenderText.prototype.updateText = function(str) {
@@ -48,9 +72,18 @@ RenderText.prototype.draw = function(gl) {
 
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
- 
-	this._glyph.draw(gl);
 
+  // draw the glyphs once to a framebuffer so we can blur it on the quad
+	gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer); 
+  
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+  this._glyph.draw(gl);
+	
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  // now draw the texture we captured on the quad..
 	gl.useProgram(this._quad_program);
 
   gl.uniform1i(this.q_imageUL, 0);
@@ -58,19 +91,17 @@ RenderText.prototype.draw = function(gl) {
   gl.uniform2f(this.q_resolutionUL,
   	gl.drawingBufferWidth, gl.drawingBufferHeight);
 
-  gl.bindTexture(gl.TEXTURE_2D, this._texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
+  // this was the way to take a snapshot if we weren't using frame buffers, expect that
+  // it would have taken a snap of the whole render space, including the ships and everything
+	/* 
+	gl.bindTexture(gl.TEXTURE_2D, this._texture);
   gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0,
     gl.drawingBufferWidth, gl.drawingBufferHeight, 0);
-
-  gl.clearColor(0, 0, 0, 1);
-	gl.clear(gl.COLOR_BUFFER_BIT);
+	*/
 
   this._quad.draw(gl, this._texture);
 
+  // now a final pass drawing the glyphs directly on the screen (not a frame buffer now)
   gl.useProgram(this._glyph_program);
 
   gl.uniform1i(this.imageUL, 0);

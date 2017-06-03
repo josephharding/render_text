@@ -12,7 +12,7 @@ function Renderer() {
 Renderer.prototype.init = function (gl) {
   this._gl = gl;	
 
-	this.three_program = createProgram(gl, getShader(gl, "3d-vs"), getShader(gl, "3d-fs"));
+	this.three_program = createProgram(gl, getShader(gl, "thing-vs"), getShader(gl, "thing-fs"));
 
   this.worldUL = this._gl.getUniformLocation(this.three_program, "u_world");
   this.worldVPUL = this._gl.getUniformLocation(this.three_program, "u_worldViewProjection");
@@ -46,7 +46,6 @@ Renderer.prototype.draw = function (text, thing, thingTwo) {
 	this._gl.clearColor(0, 0, 0, 1);
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
 
-	text.draw(this._gl);
 
 	// start drawing test 3D scene
 	this._gl.useProgram(this.three_program);
@@ -76,9 +75,12 @@ Renderer.prototype.draw = function (text, thing, thingTwo) {
   
   thingTwo.setOffset(this.offsetUL, -15, 0, 0);
   thingTwo.draw(this.offsetUL, this._gl);
+	
   
   this._gl.disable(this._gl.DEPTH_TEST);
 	//this._gl.disable(this._gl.CULL_FACE);
 	
-	this.r++;
+  text.draw(this._gl);
+	
+  this.r++;
 };

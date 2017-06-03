@@ -15,7 +15,7 @@
     <br/> 
     <input id="str" type="text"></input>
   </body>
-  <script id="3d-vs" type="x-shader/x-vertex">#version 300 es
+  <script id="thing-vs" type="x-shader/x-vertex">#version 300 es
 
     uniform mat4 u_worldViewProjection;
     uniform mat4 u_world;
@@ -35,7 +35,7 @@
 			gl_Position.xyz += u_offset;
   	}
   </script>
-  <script id="3d-fs" type="x-shader/x-fragment">#version 300 es
+  <script id="thing-fs" type="x-shader/x-fragment">#version 300 es
 
 		precision mediump float;
    
@@ -48,12 +48,12 @@
     out vec4 outColor;
 		
     void main() {
-      float light = dot(normalize(v_normal), u_light);
+      float light = min(max(dot(normalize(v_normal), u_light) + 0.8, 0.4), 0.9);
 			outColor = texture(u_image, v_uv);
       outColor.rgb *= light;
   	}
   </script>
-  <script id="offset-vs" type="x-shader/x-vertex">#version 300 es
+  <script id="glyph-grid-vs" type="x-shader/x-vertex">#version 300 es
   
 		in vec2 a_position;
 		in vec2 a_uv;
@@ -70,7 +70,21 @@
     	gl_Position = vec4((u_scale * aspected) + a_offset, 0, 1);
   	}
   </script>
-  <script id="simple-vs" type="x-shader/x-vertex">#version 300 es
+  <script id="glyph-grid-fs" type="x-shader/x-fragment">#version 300 es
+
+		precision mediump float;
+		
+    in vec2 v_uv;
+    
+    uniform sampler2D u_image;
+		 
+    out vec4 outColor;
+		
+    void main() {
+			outColor = vec4(0.3, 1, 0.3, 1) * texture(u_image, v_uv);
+  	}
+  </script>
+  <script id="text-quad-vs" type="x-shader/x-vertex">#version 300 es
   
 		in vec2 a_position;
 		in vec2 a_uv;
@@ -84,22 +98,7 @@
     	gl_Position = vec4(a_position, 0, 1);
   	}
   </script>
-  <script id="simple-texture-fs" type="x-shader/x-fragment">#version 300 es
-
-		precision mediump float;
-		
-    in vec2 v_uv;
-    
-    uniform sampler2D u_image;
-		 
-    out vec4 outColor;
-		
-    void main() {
-			outColor = vec4(0.3, 1, 0.3, 1) * texture(u_image, v_uv);
-			//outColor = vec4(1, 0, 0, 1);
-  	}
-  </script>
-  <script id="other-texture-fs" type="x-shader/x-fragment">#version 300 es
+  <script id="text-quad-fs" type="x-shader/x-fragment">#version 300 es
  		
 		precision mediump float;
 		
