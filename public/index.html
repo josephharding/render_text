@@ -17,8 +17,8 @@
   </body>
   <script id="thing-vs" type="x-shader/x-vertex">#version 300 es
 
-    uniform mat4 u_worldViewProjection;
-    uniform mat4 u_world;
+    uniform mat4 u_projection;
+    uniform mat4 u_modelView;
     uniform vec3 u_offset;
 
 		in vec2 a_uv;
@@ -30,8 +30,8 @@
 
 		void main() {
      	v_uv = a_uv; 
-     	v_normal = mat3(u_world) * a_normal; 
-			gl_Position = u_worldViewProjection * a_position;
+     	v_normal = mat3(u_modelView) * a_normal; 
+			gl_Position = u_projection * u_modelView * a_position;
 			gl_Position.xyz += u_offset;
   	}
   </script>
