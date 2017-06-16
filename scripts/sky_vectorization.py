@@ -43,6 +43,38 @@ def get_pixel_below(grid_width, grid_height, idx):
         return ij_to_idx(grid_height, i, j + 1)
 
 
+def get_pixel_above_right(grid_width, grid_height, idx):
+    i, j = idx_to_ij(grid_width, grid_height, idx)
+    if j == 0 or i + 1 == grid_width:
+        return None
+    else:
+        return ij_to_idx(grid_height, i + 1, j - 1)
+
+
+def get_pixel_above_left(grid_width, grid_height, idx):
+    i, j = idx_to_ij(grid_width, grid_height, idx)
+    if j == 0 or i == 0:
+        return None
+    else:
+        return ij_to_idx(grid_height, i - 1, j - 1)
+
+
+def get_pixel_below_left(grid_width, grid_height, idx):
+    i, j = idx_to_ij(grid_width, grid_height, idx)
+    if j + 1 == grid_height or i == 0:
+        return None
+    else:
+        return ij_to_idx(grid_height, i - 1, j + 1)
+
+
+def get_pixel_below_right(grid_width, grid_height, idx):
+    i, j = idx_to_ij(grid_width, grid_height, idx)
+    if j + 1 == grid_height or i + 1 == grid_width:
+        return None
+    else:
+        return ij_to_idx(grid_height, i + 1, j + 1)
+
+
 def average_color(average, color):
     diff = (average[0] - color[0], average[1] - color[1], average[2] - color[2])
     return (average[0] + diff[0], average[1] + diff[1], average[2] + diff[2])
@@ -91,10 +123,7 @@ def make_sections(pixels, width, height):
     return sections
 
 
-def vectorize(pixels, img):
-    sections = make_sections(pixels, img.width, img.height) 
-    pdb.gimp_message("sections: {a}".format(a=sections)) 
-    
+def draw_pixel_groups_to_layers(pixel_groups, img, label):
     actual_name = pdb.gimp_brush_new('joe')
     pdb.gimp_message("brush name: {a}".format(a=actual_name)) 
      
@@ -104,21 +133,75 @@ def vectorize(pixels, img):
     pdb.gimp_context_set_brush_size(1)  
     pdb.gimp_context_set_brush(actual_name)
     
-    section_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    for idx, section in enumerate(sections):
-        pdb.gimp_context_set_foreground(section_colors[idx % len(section_colors)])
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    for idx, pixels in enumerate(pixel_groups):
+        pdb.gimp_context_set_foreground(colors[idx % len(colors)])
         
-        section_fill = gimp.Layer(img, "section {n}".format(n=idx), img.width, img.height, RGB_IMAGE, 100, NORMAL_MODE)
+        section_fill = gimp.Layer(img, "{l} {n}".format(l=label, n=idx), img.width, img.height, RGB_IMAGE, 100, NORMAL_MODE)
         section_fill.fill(BACKGROUND_FILL) 
         img.add_layer(section_fill, idx + 1)
         
-        new_points = [] 
-        for idx in section:
-            new_points += idx_to_ij(img.width, img.height, idx)
-      
-        pdb.gimp_message("new points: {a}".format(a=new_points))
-        if len(new_points) > 0:
-            pdb.gimp_pencil(section_fill, len(new_points), new_points) 
+        for idx in pixels:
+            pdb.gimp_pencil(section_fill, 2, idx_to_ij(img.width, img.height,idx)) 
+
+
+def reduce_sections(sections):
+    return "hello"
+
+
+# a pixel is on the edge of a section if it is not surrounded by other pixels in
+# the section
+def passes_edge_test(width, height, pixel, section):
+    neighbors = set([
+        get_pixel_right(width, height, pixel),
+        get_pixel_left(width, height, pixel),
+        get_pixel_above(width, height, pixel),
+        get_pixel_below(width, height, pixel),
+        get_pixel_below_right(width, height, pixel),
+        get_pixel_below_left(width, height, pixel),
+        get_pixel_above_left(width, height, pixel),
+        get_pixel_above_right(width, height, pixel)
+        ])
+    all_pixels = set(section)
+    if len(neighbors & all_pixels) == 8:
+        return False
+    else:
+        return True
+
+
+def make_edges(width, height, sections):
+    result = []
+    for section in sections:
+        new_edge = []
+        for pixel in section:
+            if passes_edge_test(width, height, pixel, section):
+                new_edge.append(pixel)
+
+        result.append(new_edge)
+
+    return result
+
+
+# an edge piece is a section of edge that borders one foreign body until the
+# last piece and sometimes the first member
+def make_edge_pieces(width, height, edges):
+    return "hello"
+
+
+def vectorize(pixels, img):
+    sections = make_sections(pixels, img.width, img.height) 
+    #pdb.gimp_message("sections: {a}".format(a=sections))  
+    draw_pixel_groups_to_layers(sections, img, "section")
+
+    edges = make_edges(img.width, img.height, sections)
+    #pdb.gimp_message("edges: {a}".format(a=edges))
+    draw_pixel_groups_to_layers(edges, img, "edge")
+   
+    #edge_pieces = make_edge_pieces(img.width, img.height, edges)
+    #pdb.gimp_message("edge piecess: {a}".format(a=edge_pieces))
+    #draw_pixel_groups_to_layers(edge_pieces, img, "piece")
+
+    #reduce_sections(edges)
 
 
 def get_pixels(img, draw):
@@ -159,7 +242,7 @@ def make_image():
     img = gimp.Image(20, 20, RGB)
 
     pixels = create_pixels(img)
-    pdb.gimp_message("pixels: {a}".format(a=pixels)) 
+    #pdb.gimp_message("pixels: {a}".format(a=pixels)) 
     
     vectorize(pixels, img) 
     
@@ -175,7 +258,7 @@ def process_image(img, drw):
     pdb.gimp_message("processing image...")
     
     pixels = get_pixels(img, drw)
-    pdb.gimp_message("pixels: {a}".format(a=pixels)) 
+    #pdb.gimp_message("pixels: {a}".format(a=pixels)) 
     
     vectorize(pixels, img)
 
