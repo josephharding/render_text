@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 from gimpfu import *
+import sys
 
+
+sys.setrecursionlimit(20000)
 
 def ij_to_idx(grid_height, i, j):
     return (j * grid_height) + i
@@ -86,24 +89,24 @@ def is_color_close(average, color):
 
 
 # returns an array of pixel indices that belong to the current section
-def scan_pixels(current_index, pixels, pixel_sectioned, color_average, width, height):
+def scan_pixels(result, current_index, pixels, pixel_sectioned, color_average, width, height):
     #pdb.gimp_message("before current index: {i}, width: {w}, height: {h}".format(i=current_index, w=width, h=height)) 
-    result = []
     if current_index is not None and current_index not in pixel_sectioned:
         if is_color_close(color_average, pixels[current_index]):
             #color_average = average_color(color_average, pixels[current_index]) 
             
             result.append(current_index) 
+            if len(result) % 20 == 0:
+                pdb.gimp_message("result gained 20 more: {l}".format(l=len(result)))
+            
             pixel_sectioned[current_index] = True 
             
-            result += scan_pixels(get_pixel_right(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
-            result += scan_pixels(get_pixel_left(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
-            result += scan_pixels(get_pixel_above(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
-            result += scan_pixels(get_pixel_below(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
-        else:
-            pdb.gimp_message("index: {i} failed color test".format(i=current_index))
-
-    return result
+            scan_pixels(result, get_pixel_right(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
+            scan_pixels(result, get_pixel_left(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
+            scan_pixels(result, get_pixel_above(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
+            scan_pixels(result, get_pixel_below(width, height, current_index), pixels, pixel_sectioned, color_average, width, height)
+        #else:
+        #    pdb.gimp_message("index: {i} failed color test".format(i=current_index))
 
 
 def make_sections(pixels, width, height):
@@ -116,7 +119,8 @@ def make_sections(pixels, width, height):
     pixel_sectioned = {} # if the index is fill with a True that means it already belongs to a section
     sections = [] # array of arrays containing indices of pixels that belong to each section
     for idx, pixel in enumerate(pixels):
-        new_section = scan_pixels(idx, pixels, pixel_sectioned, pixel, width, height) 
+        new_section = []
+        scan_pixels(new_section, idx, pixels, pixel_sectioned, pixel, width, height) 
         if len(new_section) > 0:
             sections.append(new_section)
 
@@ -179,6 +183,9 @@ def make_edges(width, height, sections):
 
         result.append(new_edge)
 
+        if len(result) % 100 == 0:
+            pdb.gimp_message("100 new members in result")
+
     return result
 
 
@@ -188,14 +195,129 @@ def make_edge_pieces(width, height, edges):
     return "hello"
 
 
+def get_section_index(idx, sections):
+    for sidx, section in enumerate(sections):
+        if idx in section:
+            return sidx 
+ 
+    return -1
+
+
+def is_border_pixel(idx, sections, width, height):
+    section_index = get_section_index(idx, sections) 
+    neighbors = [
+        get_pixel_right(width, height, idx),
+        get_pixel_left(width, height, idx),
+        get_pixel_above(width, height, idx),
+        get_pixel_below(width, height, idx)
+        ]
+    for neighbor in neighbors:
+        if section_index != get_section_index(neighbor, sections):
+            return True
+
+    return False
+
+
+def get_borders(idx, sections, width, height):
+    result = [] 
+    right = get_pixel_right(width, height, idx) 
+    if get_section_index(idx, sections) != get_section_index(right, sections):
+        i, j = idx_to_ij(width, height, idx)
+        result.append(((i + 1, j), (i + 1, j + 1)))
+    
+    left = get_pixel_left(width, height, idx)
+    if get_section_index(idx, sections) != get_section_index(left, sections):
+        i, j = idx_to_ij(width, height, idx)
+        result.append(((i, j), (i, j + 1)))
+    
+    above = get_pixel_above(width, height, idx)
+    if get_section_index(idx, sections) != get_section_index(above, sections):
+        i, j = idx_to_ij(width, height, idx)
+        result.append(((i, j), (i + 1, j)))
+    
+    below = get_pixel_below(width, height, idx)
+    if get_section_index(idx, sections) != get_section_index(below, sections):
+        i, j = idx_to_ij(width, height, idx)
+        result.append(((i, j + 1), (i + 1, j + 1)))
+
+    return get_section_index(idx, sections), result
+
+
+def can_link(a, b):
+    for point in a:
+        if point in b:
+            return True
+
+    return False
+
+
+def link_up(links):
+    pdb.gimp_message("getting started") 
+    active_chain = [links.pop(0)]
+    chains = []
+    pdb.gimp_message("links: {a}".format(a=links))  
+    while len(links) > 0:
+        done = True
+        for lidx, link in enumerate(links):
+            pdb.gimp_message("link: {a}, active link: {b}".format(a=link, b=active_chain[-1]))
+            if can_link(link, active_chain[-1]):
+                pdb.gimp_message("linked!")
+                active_chain.append(link)
+                del links[lidx]
+                done = False 
+                break
+
+        if done:
+            pdb.gimp_message("active chain: {a}".format(a=active_chain))  
+            chains.append(active_chain)
+            active_chain = [links.pop(0)]
+
+    if len(active_chain) > 0:
+        chains.append(active_chain)
+
+    new_chains = []
+    for chain in chains:
+        new_chain = []
+        for pairs in chain:
+            if pairs[0] not in new_chain:
+               new_chain.append(pairs[0])  
+            if pairs[1] not in new_chain:
+               new_chain.append(pairs[1])  
+
+        new_chains.append(new_chain)
+
+    return new_chains
+
+
+def make_borders(pixels, sections, width, height):
+    pdb.gimp_message("make borders called")
+    links = {}
+    for idx, pixel in enumerate(pixels):
+        if is_border_pixel(idx, sections, width, height):
+            section_index, section_links = get_borders(idx, sections, width, height)
+            
+            if section_index in links: 
+                links[section_index] += section_links
+            else: 
+                links[section_index] = section_links
+
+    pdb.gimp_message("links: {u}".format(u=links))  
+    #unique_links = list(set(links))
+    #pdb.gimp_message("unique_links: {u}".format(u=unique_links))  
+    return link_up(links[0])
+
+
 def vectorize(pixels, img):
     sections = make_sections(pixels, img.width, img.height) 
     #pdb.gimp_message("sections: {a}".format(a=sections))  
     draw_pixel_groups_to_layers(sections, img, "section")
 
-    edges = make_edges(img.width, img.height, sections)
+    borders = make_borders(pixels, sections, img.width, img.height)
+    pdb.gimp_message("borders: {b}".format(b=borders))
+
+    #edges = make_edges(img.width, img.height, sections)
     #pdb.gimp_message("edges: {a}".format(a=edges))
-    draw_pixel_groups_to_layers(edges, img, "edge")
+    #draw_pixel_groups_to_layers(edges, img, "edge")
    
     #edge_pieces = make_edge_pieces(img.width, img.height, edges)
     #pdb.gimp_message("edge piecess: {a}".format(a=edge_pieces))
@@ -261,6 +383,10 @@ def process_image(img, drw):
     #pdb.gimp_message("pixels: {a}".format(a=pixels)) 
     
     vectorize(pixels, img)
+
+    #a = ((0, 1), (0, 2))
+    #b = ((1, 0), (0, 0))
+    #pdb.gimp_message("can link: {a}".format(a=can_link(a, b)))
 
 
 register(
