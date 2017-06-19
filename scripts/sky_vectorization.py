@@ -46,38 +46,6 @@ def get_pixel_below(grid_width, grid_height, idx):
         return ij_to_idx(grid_height, i, j + 1)
 
 
-def get_pixel_above_right(grid_width, grid_height, idx):
-    i, j = idx_to_ij(grid_width, grid_height, idx)
-    if j == 0 or i + 1 == grid_width:
-        return None
-    else:
-        return ij_to_idx(grid_height, i + 1, j - 1)
-
-
-def get_pixel_above_left(grid_width, grid_height, idx):
-    i, j = idx_to_ij(grid_width, grid_height, idx)
-    if j == 0 or i == 0:
-        return None
-    else:
-        return ij_to_idx(grid_height, i - 1, j - 1)
-
-
-def get_pixel_below_left(grid_width, grid_height, idx):
-    i, j = idx_to_ij(grid_width, grid_height, idx)
-    if j + 1 == grid_height or i == 0:
-        return None
-    else:
-        return ij_to_idx(grid_height, i - 1, j + 1)
-
-
-def get_pixel_below_right(grid_width, grid_height, idx):
-    i, j = idx_to_ij(grid_width, grid_height, idx)
-    if j + 1 == grid_height or i + 1 == grid_width:
-        return None
-    else:
-        return ij_to_idx(grid_height, i + 1, j + 1)
-
-
 def average_color(average, color):
     diff = (average[0] - color[0], average[1] - color[1], average[2] - color[2])
     return (average[0] + diff[0], average[1] + diff[1], average[2] + diff[2])
@@ -149,52 +117,6 @@ def draw_pixel_groups_to_layers(pixel_groups, img, label):
             pdb.gimp_pencil(section_fill, 2, idx_to_ij(img.width, img.height,idx)) 
 
 
-def reduce_sections(sections):
-    return "hello"
-
-
-# a pixel is on the edge of a section if it is not surrounded by other pixels in
-# the section
-def passes_edge_test(width, height, pixel, section):
-    neighbors = set([
-        get_pixel_right(width, height, pixel),
-        get_pixel_left(width, height, pixel),
-        get_pixel_above(width, height, pixel),
-        get_pixel_below(width, height, pixel),
-        get_pixel_below_right(width, height, pixel),
-        get_pixel_below_left(width, height, pixel),
-        get_pixel_above_left(width, height, pixel),
-        get_pixel_above_right(width, height, pixel)
-        ])
-    all_pixels = set(section)
-    if len(neighbors & all_pixels) == 8:
-        return False
-    else:
-        return True
-
-
-def make_edges(width, height, sections):
-    result = []
-    for section in sections:
-        new_edge = []
-        for pixel in section:
-            if passes_edge_test(width, height, pixel, section):
-                new_edge.append(pixel)
-
-        result.append(new_edge)
-
-        if len(result) % 100 == 0:
-            pdb.gimp_message("100 new members in result")
-
-    return result
-
-
-# an edge piece is a section of edge that borders one foreign body until the
-# last piece and sometimes the first member
-def make_edge_pieces(width, height, edges):
-    return "hello"
-
-
 def get_section_index(idx, sections):
     for sidx, section in enumerate(sections):
         if idx in section:
@@ -243,54 +165,99 @@ def get_borders(idx, sections, width, height):
     return get_section_index(idx, sections), result
 
 
-def can_link(a, b):
-    for point in a:
-        if point in b:
-            return True
+# TODO - this function assumes unique values in the tuple
+def link_in_links(target_link, links): 
+    #pdb.gimp_message("target link: {t}, all links: {a}".format(t=target_link, a=links))
+    for l_idx, link in enumerate(links):
+        found = True 
+        for coord in link:
+            if coord not in target_link:
+                found = False
+                break
 
-    return False
+        if found:
+            return l_idx
+
+    return -1
+
+
+# returns an index to the next link to use, or -1 for no available links
+def get_next_clockwise_link(current_link, links):
+    result = -1
+    direction_index = -1
+    start = current_link[0] # NOTE - this assumption only works because we use the order_link func
+    end = current_link[1] # NOTE - this assumption only works because we use the order_link func
+    if start[0] - end[0] == 0 and start[1] - end[1] == -1:
+        # DOWN
+        direction_index = 2
+    elif start[0] - end[0] == 0 and start[1] - end[1] == 1:
+        # UP
+        direction_index = 0
+    elif start[0] - end[0] == 1 and start[1] - end[1] == 0:
+        # LEFT
+        direction_index = 3
+    elif start[0] - end[0] == -1 and start[1] - end[1] == 0:
+        # RIGHT
+        direction_index = 1
+
+    # pdb.gimp_message("direction_index: {i}".format(i=direction_index))
+    if direction_index == -1:
+        pdb.gimp_message("ERROR INVALID DIRECTION INDEX")
+        return -1
+
+    
+    # create the expected clockwise link values
+    dirs = []
+    dirs.append((end, (end[0], end[1] - 1))) # UP in pos 0
+    dirs.append((end, (end[0] + 1, end[1]))) # RIGHT in pos 1
+    dirs.append((end, (end[0], end[1] + 1))) # DOWN in pos 2
+    dirs.append((end, (end[0] - 1, end[1]))) # LEFT in pos 3
+
+    # pdb.gimp_message("dirs: {i}".format(i=dirs))
+    i = 0
+    while(i < len(dirs)):
+        found_index = link_in_links(dirs[(direction_index + i) % len(dirs)], links)
+        if found_index > -1:
+            result = found_index 
+            break
+             
+        i += 1
+   
+    return result 
+
+
+def order_link(tail, next_tail):
+    if tail[1] == next_tail[0]:
+        return (next_tail[0], next_tail[1]) 
+    else:
+        return (next_tail[1], next_tail[0]) 
 
 
 def link_up(links):
-    pdb.gimp_message("getting started") 
-    active_chain = [links.pop(0)]
-    chains = []
-    pdb.gimp_message("links: {a}".format(a=links))  
+    chain = [links.pop()]
     while len(links) > 0:
-        done = True
-        for lidx, link in enumerate(links):
-            pdb.gimp_message("link: {a}, active link: {b}".format(a=link, b=active_chain[-1]))
-            if can_link(link, active_chain[-1]):
-                pdb.gimp_message("linked!")
-                active_chain.append(link)
-                del links[lidx]
-                done = False 
-                break
+        #pdb.gimp_message("link up iteration: {a}".format(a=links))
+        next_idx = get_next_clockwise_link(chain[-1], links)
+        if next_idx > -1:
+            #pdb.gimp_message("linked at {i}".format(i=next_idx))
+            chain.append(order_link(chain[-1], links[next_idx]))
+            del links[next_idx] 
 
-        if done:
-            pdb.gimp_message("active chain: {a}".format(a=active_chain))  
-            chains.append(active_chain)
-            active_chain = [links.pop(0)]
+        else:
+            pdb.gimp_message("ERROR: couldn't find link to {l} in {a}, existing chain was: {c}".format(l=active_chain[-1], a=links, c=active_chain))
 
-    if len(active_chain) > 0:
-        chains.append(active_chain)
+    # convert chain of links into list of points
+    points = []
+    for pairs in chain: # NOTE - this step stops the completion of the chain into a loop
+        if pairs[0] not in points:
+           points.append(pairs[0])
+        if pairs[1] not in points:
+           points.append(pairs[1])  
 
-    new_chains = []
-    for chain in chains:
-        new_chain = []
-        for pairs in chain:
-            if pairs[0] not in new_chain:
-               new_chain.append(pairs[0])  
-            if pairs[1] not in new_chain:
-               new_chain.append(pairs[1])  
-
-        new_chains.append(new_chain)
-
-    return new_chains
+    return points
 
 
-def make_borders(pixels, sections, width, height):
-    pdb.gimp_message("make borders called")
+def make_point_borders(pixels, sections, width, height):
     links = {}
     for idx, pixel in enumerate(pixels):
         if is_border_pixel(idx, sections, width, height):
@@ -301,10 +268,12 @@ def make_borders(pixels, sections, width, height):
             else: 
                 links[section_index] = section_links
 
-    pdb.gimp_message("links: {u}".format(u=links))  
-    #unique_links = list(set(links))
-    #pdb.gimp_message("unique_links: {u}".format(u=unique_links))  
-    return link_up(links[0])
+    #pdb.gimp_message("links: {u}".format(u=links))
+    result = []
+    for key, val in links.iteritems():
+        result.append(link_up(val))
+
+    return result
 
 
 def vectorize(pixels, img):
@@ -312,18 +281,10 @@ def vectorize(pixels, img):
     #pdb.gimp_message("sections: {a}".format(a=sections))  
     draw_pixel_groups_to_layers(sections, img, "section")
 
-    borders = make_borders(pixels, sections, img.width, img.height)
-    pdb.gimp_message("borders: {b}".format(b=borders))
+    points = make_point_borders(pixels, sections, img.width, img.height)
+    pdb.gimp_message("point border: {b}".format(b=points))
 
-    #edges = make_edges(img.width, img.height, sections)
-    #pdb.gimp_message("edges: {a}".format(a=edges))
-    #draw_pixel_groups_to_layers(edges, img, "edge")
-   
-    #edge_pieces = make_edge_pieces(img.width, img.height, edges)
-    #pdb.gimp_message("edge piecess: {a}".format(a=edge_pieces))
-    #draw_pixel_groups_to_layers(edge_pieces, img, "piece")
-
-    #reduce_sections(edges)
+    return "hello"
 
 
 def get_pixels(img, draw):
@@ -384,9 +345,9 @@ def process_image(img, drw):
     
     vectorize(pixels, img)
 
-    #a = ((0, 1), (0, 2))
-    #b = ((1, 0), (0, 0))
-    #pdb.gimp_message("can link: {a}".format(a=can_link(a, b)))
+    #link = ((0, 1), (0, 2))
+    #links = [((1, 0), (0, 0)), ((0,2),(1,2)), ((0,3),(0,2)), ((0, 4), (0,3))]
+    #pdb.gimp_message("next: {a}".format(a=get_next_clockwise_link(link, links)))
 
 
 register(
