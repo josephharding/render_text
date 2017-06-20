@@ -254,6 +254,7 @@ def link_up(links):
         if pairs[1] not in points:
            points.append(pairs[1])  
 
+    points.append(points[0]) # complete the loop here
     return points
 
 
@@ -269,9 +270,9 @@ def make_point_borders(pixels, sections, width, height):
                 links[section_index] = section_links
 
     #pdb.gimp_message("links: {u}".format(u=links))
-    result = []
+    result = {}
     for key, val in links.iteritems():
-        result.append(link_up(val))
+        result[key] = link_up(val)
 
     return result
 
@@ -281,8 +282,13 @@ def vectorize(pixels, img):
     #pdb.gimp_message("sections: {a}".format(a=sections))  
     draw_pixel_groups_to_layers(sections, img, "section")
 
-    points = make_point_borders(pixels, sections, img.width, img.height)
-    pdb.gimp_message("point border: {b}".format(b=points))
+    section_points = make_point_borders(pixels, sections, img.width, img.height) # map of section index to edge points
+    pdb.gimp_message("section points: {b}".format(b=section_points))
+
+    edges = [] # list of lists, index is edge id, value is the list of points in that edge 
+    sections_to_edges = {} # map of sections to array of edges that make up that section 
+
+    pdb.gimp_message("sub array: {a}".format(a=find_all_common_subarrays(section_points[0], section_points[1])))     
 
     return "hello"
 
@@ -337,18 +343,80 @@ def make_image():
     pdb.gimp_context_pop()
 
 
+def find_longest_common_subarray(a, b):
+    a_best = -1
+    b_best = -1
+    best_span = 0 
+    a_start = -1
+    b_start = -1
+    span = 0
+    for ai, entry in enumerate(a):
+        if entry in b:
+       
+            a_idx = ai
+            b_idx = 0
+            while a_idx < len(a) and b_idx < len(b):
+                if a[a_idx] != b[b_idx]:
+                    b_idx += 1
+         
+                else:
+                    span += 1
+                    if span == 1:
+                        a_start = a.index(entry)
+                        b_start = b.index(entry)
+                    
+                    if span > best_span:
+                        best_span = span
+                        a_best = a_start
+                        b_best = b_start
+                    
+                    a_idx += 1
+                    b_idx += 1
+                    if a_idx < len(a) and b_idx < len(b) and a[a_idx] != b[b_idx]:
+                        a_idx -= 1
+                        span = 0
+
+
+    return a_best, b_best, best_span
+
+
+def find_all_common_subarrays(a, b):
+    result = []
+    iters = 0
+    while True:
+        iters += 1 
+        a_idx, b_idx, span = find_longest_common_subarray(a, b)
+        pdb.gimp_message("sub array: {a}, {b}, {s}".format(a=a_idx, b=b_idx, s=span))
+        if span == 0 or iters > 10:
+            break
+        else:
+            result.append(a[a_idx:a_idx + span])
+            pdb.gimp_message("{a} is the same as {b}".format(a=a[a_idx:a_idx + span], b=b[b_idx:b_idx + span])) 
+            del a[a_idx:a_idx + span]
+            del b[b_idx:b_idx + span]
+            pdb.gimp_message("common subarray result: {r}".format(r=result))
+
+    return result
+
+
 def process_image(img, drw):
     pdb.gimp_message("processing image...")
     
-    pixels = get_pixels(img, drw)
+    #pixels = get_pixels(img, drw)
     #pdb.gimp_message("pixels: {a}".format(a=pixels)) 
     
-    vectorize(pixels, img)
+    #vectorize(pixels, img)
 
     #link = ((0, 1), (0, 2))
     #links = [((1, 0), (0, 0)), ((0,2),(1,2)), ((0,3),(0,2)), ((0, 4), (0,3))]
     #pdb.gimp_message("next: {a}".format(a=get_next_clockwise_link(link, links)))
 
+    # a few issues here.. the common subarrays assumes things are in wrapping in the same order and that's not happening
+    a = [(1,2),(2,2),(2,1),(2,0),(1,0),(0,0),(0,1),(0,2),(1,2)]
+    a = list(reversed(a))
+    b = [(3,4),(4,4),(4,3),(4,2),(4,1),(4,0),(3,0),(2,0),(2,1),(2,2),(1,2),(0,2),(0,3),(0,4),(1,4),(2,4),(3,4)] 
+    pdb.gimp_message("test: {a}".format(a=find_all_common_subarrays(a, b)))
+    
 
 register(
     "python_fu_vectorize_sky",
