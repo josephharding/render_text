@@ -254,7 +254,7 @@ def link_up(links):
         if pairs[1] not in points:
            points.append(pairs[1])  
 
-    points.append(points[0]) # complete the loop here
+    #points.append(points[0]) # complete the loop here # TODO - this breaks calculating proper wrapping
     return points
 
 
@@ -288,7 +288,7 @@ def vectorize(pixels, img):
     edges = [] # list of lists, index is edge id, value is the list of points in that edge 
     sections_to_edges = {} # map of sections to array of edges that make up that section 
 
-    pdb.gimp_message("sub array: {a}".format(a=find_all_common_subarrays(section_points[0], section_points[1])))     
+    pdb.gimp_message("sub array: {a}".format(a=find_all_common_subarrays(section_points[0], list(reversed(section_points[1])))))
 
     return "hello"
 
@@ -343,43 +343,6 @@ def make_image():
     pdb.gimp_context_pop()
 
 
-def find_longest_common_subarray(a, b):
-    a_best = -1
-    b_best = -1
-    best_span = 0 
-    a_start = -1
-    b_start = -1
-    span = 0
-    for ai, entry in enumerate(a):
-        if entry in b:
-       
-            a_idx = ai
-            b_idx = 0
-            while a_idx < len(a) and b_idx < len(b):
-                if a[a_idx] != b[b_idx]:
-                    b_idx += 1
-         
-                else:
-                    span += 1
-                    if span == 1:
-                        a_start = a.index(entry)
-                        b_start = b.index(entry)
-                    
-                    if span > best_span:
-                        best_span = span
-                        a_best = a_start
-                        b_best = b_start
-                    
-                    a_idx += 1
-                    b_idx += 1
-                    if a_idx < len(a) and b_idx < len(b) and a[a_idx] != b[b_idx]:
-                        a_idx -= 1
-                        span = 0
-
-
-    return a_best, b_best, best_span
-
-
 def find_all_common_subarrays(a, b):
     result = []
     iters = 0
@@ -390,32 +353,108 @@ def find_all_common_subarrays(a, b):
         if span == 0 or iters > 10:
             break
         else:
-            result.append(a[a_idx:a_idx + span])
-            pdb.gimp_message("{a} is the same as {b}".format(a=a[a_idx:a_idx + span], b=b[b_idx:b_idx + span])) 
-            del a[a_idx:a_idx + span]
-            del b[b_idx:b_idx + span]
+            # TODO - implement overflow logic here for when the end should wrap around to the front of the array
+            a_end = a_idx + span
+            b_end = b_idx + span
+
+            a_diff = -1
+            if a_end > len(a):
+                a_diff = a_end - (len(a))
+                a_end = len(a)
+            
+            b_diff = -1
+            if b_end > len(b):
+                b_diff = b_end - (len(b))
+                b_end = len(b)
+        
+            pdb.gimp_message("diffs: {a}, {b}".format(a=a_diff, b=b_diff))
+
+            addition = a[a_idx:a_end]
+            if a_diff > -1:
+                addition += a[0:a_diff]
+            
+            bddition = b[b_idx:b_end]
+            if b_diff > -1:
+                bddition += b[0:b_diff]
+
+            result.append(addition)
+            
+            pdb.gimp_message("{a} is the same as {b}".format(a=addition, b=bddition)) 
+            del a[a_idx:a_end]
+            if a_diff > -1:
+                del a[0:a_diff]
+
+            del b[b_idx:b_end]
+            if b_diff > -1:
+                del b[0:b_diff]
+            
             pdb.gimp_message("common subarray result: {r}".format(r=result))
 
     return result
 
 
+def find_longest_common_subarray(a, b):
+    a_best = -1
+    b_best = -1
+    best_span = 0 
+    for ai, entry in enumerate(a):
+        if entry in b:
+            a_start = -1
+            b_start = -1
+            span = 0
+       
+            a_idx = ai
+            b_idx = 0
+            while b_idx > b_start and b_idx % len(b) != b_start: # we're done when we've looped once
+                #pdb.gimp_message("comparing a: {a}, to b: {b} (a_idx: {ai}, b_idx:{bi}) len a: {al} len b: {bl}".format(a=a[a_idx % len(a)], b=b[b_idx % len(b)], ai=a_idx, bi=b_idx, al=len(a), bl=len(b))) 
+
+                if a[a_idx % len(a)] != b[b_idx % len(b)]:
+                    b_idx += 1
+         
+                else:
+                    span += 1
+                    if span == 1:
+                        a_start = a_idx
+                        b_start = b_idx
+                    
+                    if span > best_span:
+                        best_span = span
+                        a_best = a_start
+                        b_best = b_start
+                        pdb.gimp_message("new best, a: {a}, b: {b}, s: {s}".format(a=a_best, b=b_best, s=best_span)) 
+
+                    a_idx += 1
+                    b_idx += 1
+                    if a[a_idx % len(a)] != b[b_idx % len(b)]:
+                        a_idx -= 1
+                        span = 0
+
+        else:
+            pdb.gimp_message("entry: {a} NOT in b".format(a=entry))
+
+    return a_best, b_best, best_span
+
+
 def process_image(img, drw):
     pdb.gimp_message("processing image...")
     
-    #pixels = get_pixels(img, drw)
+    pixels = get_pixels(img, drw)
     #pdb.gimp_message("pixels: {a}".format(a=pixels)) 
     
-    #vectorize(pixels, img)
+    vectorize(pixels, img)
 
     #link = ((0, 1), (0, 2))
     #links = [((1, 0), (0, 0)), ((0,2),(1,2)), ((0,3),(0,2)), ((0, 4), (0,3))]
     #pdb.gimp_message("next: {a}".format(a=get_next_clockwise_link(link, links)))
 
-    # a few issues here.. the common subarrays assumes things are in wrapping in the same order and that's not happening
-    a = [(1,2),(2,2),(2,1),(2,0),(1,0),(0,0),(0,1),(0,2),(1,2)]
-    a = list(reversed(a))
-    b = [(3,4),(4,4),(4,3),(4,2),(4,1),(4,0),(3,0),(2,0),(2,1),(2,2),(1,2),(0,2),(0,3),(0,4),(1,4),(2,4),(3,4)] 
-    pdb.gimp_message("test: {a}".format(a=find_all_common_subarrays(a, b)))
+    #a = [(1,2),(2,2),(2,1),(2,0),(1,0),(0,0),(0,1),(0,2),(1,2)]
+    #a = list(reversed(a))
+    #b = [(3,4),(4,4),(4,3),(4,2),(4,1),(4,0),(3,0),(2,0),(2,1),(2,2),(1,2),(0,2),(0,3),(0,4),(1,4),(2,4),(3,4)] 
+    
+    # this should return [(2,0),(0,0)] once we enable wrapping
+    #a = [(0,0),(1,0),(2,0)]
+    #b = [(2,1),(2,0),(0,0)]
+    #pdb.gimp_message("test: {a}".format(a=find_all_common_subarrays(a, b)))
     
 
 register(
