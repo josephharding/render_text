@@ -270,11 +270,138 @@ def make_point_borders(pixels, sections, width, height):
                 links[section_index] = section_links
 
     #pdb.gimp_message("links: {u}".format(u=links))
-    result = {}
+    result = []
     for key, val in links.iteritems():
-        result[key] = link_up(val)
+        result.append(link_up(val))
 
     return result
+
+
+def calculate_shared_edges(section_points):
+    edges = [] # list of lists, index is edge id, value is the list of points in that edge 
+    sections_to_edges = {} # map of sections to array of edges that make up that section 
+
+    edge_wrapped_for = {} # TODO - better way to keep track of which direction something was wrapped for?
+    c_idx = 0
+    while len(section_points) > 0:
+        current = section_points.pop(0) 
+
+        for idx, points in enumerate(section_points):
+            common_edges = find_all_common_subarrays(current, list(reversed(points)))
+            for common_edge in common_edges:
+
+                edges.append(common_edge)
+                edge_wrapped_for[len(edges) - 1] = c_idx
+
+                if c_idx not in sections_to_edges:
+                    sections_to_edges[c_idx] = []
+                sections_to_edges[c_idx].append(len(edges) - 1)
+
+                if (idx + c_idx + 1) not in sections_to_edges:
+                    sections_to_edges[idx + c_idx + 1] = []
+                sections_to_edges[idx + c_idx + 1].append(len(edges) - 1)
+
+        # deal with any non-shared edges
+        shared_edges = []
+        for edge_id in sections_to_edges[c_idx]:
+            if edge_wrapped_for[edge_id] == c_idx:
+                shared_edges.append(edges[edge_id])
+            else:
+                shared_edges.append(list(reversed(edges[edge_id])))
+
+        remaining_edges = subtract_subarrays(current, shared_edges)
+        for remaining_edge in remaining_edges:
+            edges.append(remaining_edge)
+            if c_idx not in sections_to_edges:
+                sections_to_edges[c_idx] = []
+            
+            sections_to_edges[c_idx].append(len(edges) - 1)
+
+        c_idx += 1
+
+    # last step is to remove duplicate edge entries (points that belong to 3 or 4 sections)
+    found_map = {} 
+    merged_list = [] 
+    for edge in edges:
+        merged_list += edge
+
+    for point in merged_list:
+        if point not in found_map:
+            found_map[point] = 0
+
+        found_map[point] += 1 
+
+    intersection_points = []
+    for found_key, found_val in found_map.iteritems():
+        if found_val > 2:
+            intersection_points.append(found_key)
+            pdb.gimp_message("point is found a lot {b}".format(b=found_key))
+
+    pdb.gimp_message("intersection_points {b}".format(b=intersection_points))
+    for intersection_point in intersection_points:
+        # the intersection point may already exist as a singleton edge 
+        if [intersection_point] not in edges: 
+            edges.append([intersection_point])
+        for i_e, edge in enumerate(edges):
+            if intersection_point in edge and len(edge) > 1:
+                front, back = split_edge(edge, intersection_point)
+
+                new_is = [edges.index([intersection_point])]
+                if len(front) > 0:
+                    edges.append(front)
+                    new_is.append(edges.index(front))
+                
+                if len(back) > 0:
+                    edges.append(back)
+                    new_is.append(edges.index(back))
+
+                del edges[i_e]
+
+                replace_map_values(sections_to_edges, i_e, new_is) 
+                downshift_indices(sections_to_edges, i_e) # b/c we just deleted this list entry all values higher than this index are now off by one
+
+
+    return edges, sections_to_edges
+
+
+def downshift_indices(m, threshold):
+    for key, val in m.iteritems():
+        new_val = [] 
+        for item in val:
+            if item >= threshold:
+                new_val.append(item - 1) 
+            else:
+                new_val.append(item)
+        m[key] = new_val
+
+
+def split_edge(edge, point):
+    past = False 
+    front = []
+    back = []
+    for p in edge:
+        if p == point:
+            past = True
+        elif past:
+            back.append(p)
+        else:
+            front.append(p)
+
+    return front, back
+
+
+# where old val is one values and new_vals is a list of new values
+def replace_map_values(m, old_item, new_items):
+    pdb.gimp_message("old_item: {b}".format(b=old_item)) 
+    for key, val in m.iteritems():
+        if old_item in val:
+            new = []
+            new += new_items
+            for item in val:
+                if item != old_item:
+                    new.append(item)
+           
+            m[key] = list(set(new))
 
 
 def vectorize(pixels, img):
@@ -285,9 +412,14 @@ def vectorize(pixels, img):
     section_points = make_point_borders(pixels, sections, img.width, img.height) # map of section index to edge points
     pdb.gimp_message("section points: {b}".format(b=section_points))
 
-    edges = [] # list of lists, index is edge id, value is the list of points in that edge 
-    sections_to_edges = {} # map of sections to array of edges that make up that section 
+    edges, sections_to_edges = calculate_shared_edges(section_points)
+    pdb.gimp_message("sections: {s}".format(s=sections_to_edges))
+    for idx, edge in enumerate(edges):
+        pdb.gimp_message("{i} edge: {e}".format(i=idx, e=edge))
 
+    # TODO - next, feed each edge into the reduction algo
+
+    # so how do we properly process all shared edges?
     pdb.gimp_message("sub array: {a}".format(a=find_all_common_subarrays(section_points[0], list(reversed(section_points[1])))))
 
     return "hello"
@@ -308,10 +440,10 @@ def create_pixels(img):
     pdb.gimp_context_push()
 
     actual_name = pdb.gimp_brush_new('joe')
-    pdb.gimp_message("brush name: {a}".format(a=actual_name)) 
+    #pdb.gimp_message("brush name: {a}".format(a=actual_name)) 
      
     actual_shape = pdb.gimp_brush_set_shape(actual_name, 1) # enum for GIMP_BRUSH_GENERATED_SQUARE doesn't work?
-    pdb.gimp_message("actual shape: {a}".format(a=actual_shape)) 
+    #pdb.gimp_message("actual shape: {a}".format(a=actual_shape)) 
     
     pdb.gimp_context_set_brush_size(1)  
     pdb.gimp_context_set_brush(actual_name)
@@ -349,7 +481,7 @@ def find_all_common_subarrays(a, b):
     while True:
         iters += 1 
         a_idx, b_idx, span = find_longest_common_subarray(a, b)
-        pdb.gimp_message("sub array: {a}, {b}, {s}".format(a=a_idx, b=b_idx, s=span))
+        #pdb.gimp_message("sub array: {a}, {b}, {s}".format(a=a_idx, b=b_idx, s=span))
         if span == 0 or iters > 10:
             break
         else:
@@ -367,7 +499,7 @@ def find_all_common_subarrays(a, b):
                 b_diff = b_end - (len(b))
                 b_end = len(b)
         
-            pdb.gimp_message("diffs: {a}, {b}".format(a=a_diff, b=b_diff))
+            #pdb.gimp_message("diffs: {a}, {b}".format(a=a_diff, b=b_diff))
 
             addition = a[a_idx:a_end]
             if a_diff > -1:
@@ -379,7 +511,7 @@ def find_all_common_subarrays(a, b):
 
             result.append(addition)
             
-            pdb.gimp_message("{a} is the same as {b}".format(a=addition, b=bddition)) 
+            #pdb.gimp_message("{a} is the same as {b}".format(a=addition, b=bddition)) 
             del a[a_idx:a_end]
             if a_diff > -1:
                 del a[0:a_diff]
@@ -388,7 +520,7 @@ def find_all_common_subarrays(a, b):
             if b_diff > -1:
                 del b[0:b_diff]
             
-            pdb.gimp_message("common subarray result: {r}".format(r=result))
+            #pdb.gimp_message("common subarray result: {r}".format(r=result))
 
     return result
 
@@ -421,7 +553,7 @@ def find_longest_common_subarray(a, b):
                         best_span = span
                         a_best = a_start
                         b_best = b_start
-                        pdb.gimp_message("new best, a: {a}, b: {b}, s: {s}".format(a=a_best, b=b_best, s=best_span)) 
+                        #pdb.gimp_message("new best, a: {a}, b: {b}, s: {s}".format(a=a_best, b=b_best, s=best_span)) 
 
                     a_idx += 1
                     b_idx += 1
@@ -429,10 +561,43 @@ def find_longest_common_subarray(a, b):
                         a_idx -= 1
                         span = 0
 
-        else:
-            pdb.gimp_message("entry: {a} NOT in b".format(a=entry))
 
     return a_best, b_best, best_span
+
+
+def is_point_ajacent(a, b):
+    if a[0] == b[0] and a[1] == (b[1] + 1):
+        return True
+    elif a[0] == b[0] and a[1] == (b[1] - 1):
+        return True
+    elif a[0] == (b[0] + 1) and a[1] == b[1]:
+        return True
+    elif a[0] == (b[0] - 1) and a[1] == b[1]:
+        return True
+    else:
+        return False
+
+
+def subtract_subarrays(current, common_edges):
+    tmp = []
+    for point in current:
+        tmp.append(point)
+
+    #pdb.gimp_message("subtract subarrays current: {c}, common: {e}".format(c=current, e=common_edges))
+    for common_edge in common_edges:
+        for point in common_edge:
+            if point in tmp:
+                del tmp[tmp.index(point)]
+
+    #pdb.gimp_message("subtract subarrays tmp: {c}, common: {e}".format(c=tmp, e=common_edges))
+    result = [[tmp.pop(0)]]
+    for point in tmp:
+        if is_point_ajacent(result[-1][-1], point):
+            result[-1].append(point)
+        else:
+            result.append([point])
+
+    return result
 
 
 def process_image(img, drw):
@@ -455,7 +620,20 @@ def process_image(img, drw):
     #a = [(0,0),(1,0),(2,0)]
     #b = [(2,1),(2,0),(0,0)]
     #pdb.gimp_message("test: {a}".format(a=find_all_common_subarrays(a, b)))
-    
+
+    #a = [(0,0),(1,0),(2,0),(3,0),(4,0)]
+    #b = [[(1, 0),(2,0)],[(0,0)]]
+    #pdb.gimp_message("remaining: {a}".format(a=subtract_subarrays(a, b))) 
+    #pdb.gimp_message("original a: {a}".format(a=a)) 
+
+    #m = {0: [0,1,2], 1: [1, 2, 3]}
+    #old = 1
+    #new = [8, 9]
+    #replace_map_values(m, old, new)
+    #pdb.gimp_message("test: {a}".format(a=m))
+
+    #edge = [(0,0),(1,0),(2,0),(3,0)]
+    #pdb.gimp_message("test: {a}".format(a=split_edge(edge, (1,0))))
 
 register(
     "python_fu_vectorize_sky",
