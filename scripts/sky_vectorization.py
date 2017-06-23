@@ -4,7 +4,7 @@ from gimpfu import *
 import sys
 
 
-sys.setrecursionlimit(20000)
+sys.setrecursionlimit(2000000)
 
 def ij_to_idx(grid_height, i, j):
     return (j * grid_height) + i
@@ -64,8 +64,8 @@ def scan_pixels(result, current_index, pixels, pixel_sectioned, color_average, w
             #color_average = average_color(color_average, pixels[current_index]) 
             
             result.append(current_index) 
-            if len(result) % 20 == 0:
-                pdb.gimp_message("result gained 20 more: {l}".format(l=len(result)))
+            if len(result) % 1000 == 0:
+                pdb.gimp_message("result gained 1000 more: {l}".format(l=len(result)))
             
             pixel_sectioned[current_index] = True 
             
@@ -97,10 +97,10 @@ def make_sections(pixels, width, height):
 
 def draw_pixel_groups_to_layers(pixel_groups, img, label):
     actual_name = pdb.gimp_brush_new('joe')
-    pdb.gimp_message("brush name: {a}".format(a=actual_name)) 
+    #pdb.gimp_message("brush name: {a}".format(a=actual_name)) 
      
     actual_shape = pdb.gimp_brush_set_shape(actual_name, 1) # enum for GIMP_BRUSH_GENERATED_SQUARE doesn't work?
-    pdb.gimp_message("actual shape: {a}".format(a=actual_shape)) 
+    #pdb.gimp_message("actual shape: {a}".format(a=actual_shape)) 
     
     pdb.gimp_context_set_brush_size(1)  
     pdb.gimp_context_set_brush(actual_name)
@@ -206,7 +206,7 @@ def get_next_clockwise_link(current_link, links):
         return -1
 
     
-    # create the expected clockwise link values
+    # create the expected clockwis link values
     dirs = []
     dirs.append((end, (end[0], end[1] - 1))) # UP in pos 0
     dirs.append((end, (end[0] + 1, end[1]))) # RIGHT in pos 1
@@ -263,7 +263,7 @@ def make_point_borders(pixels, sections, width, height):
     for idx, pixel in enumerate(pixels):
         if is_border_pixel(idx, sections, width, height):
             section_index, section_links = get_borders(idx, sections, width, height)
-            
+           
             if section_index in links: 
                 links[section_index] += section_links
             else: 
@@ -335,9 +335,8 @@ def calculate_shared_edges(section_points):
     for found_key, found_val in found_map.iteritems():
         if found_val > 2:
             intersection_points.append(found_key)
-            pdb.gimp_message("point is found a lot {b}".format(b=found_key))
 
-    pdb.gimp_message("intersection_points {b}".format(b=intersection_points))
+    #pdb.gimp_message("intersection_points {b}".format(b=intersection_points))
     for intersection_point in intersection_points:
         # the intersection point may already exist as a singleton edge 
         if [intersection_point] not in edges: 
@@ -392,7 +391,6 @@ def split_edge(edge, point):
 
 # where old val is one values and new_vals is a list of new values
 def replace_map_values(m, old_item, new_items):
-    pdb.gimp_message("old_item: {b}".format(b=old_item)) 
     for key, val in m.iteritems():
         if old_item in val:
             new = []
@@ -406,23 +404,54 @@ def replace_map_values(m, old_item, new_items):
 
 def vectorize(pixels, img):
     sections = make_sections(pixels, img.width, img.height) 
-    #pdb.gimp_message("sections: {a}".format(a=sections))  
-    draw_pixel_groups_to_layers(sections, img, "section")
+    #pdb.gimp_message("sections count: {a}".format(a=len(sections)))  
+    #draw_pixel_groups_to_layers(sections, img, "section")
 
-    section_points = make_point_borders(pixels, sections, img.width, img.height) # map of section index to edge points
-    pdb.gimp_message("section points: {b}".format(b=section_points))
+    section_points = make_point_borders(pixels, sections, img.width, img.height)
+    #pdb.gimp_message("section border points: {b}".format(b=section_points))
 
     edges, sections_to_edges = calculate_shared_edges(section_points)
-    pdb.gimp_message("sections: {s}".format(s=sections_to_edges))
-    for idx, edge in enumerate(edges):
-        pdb.gimp_message("{i} edge: {e}".format(i=idx, e=edge))
+    #pdb.gimp_message("sections: {s}".format(s=sections_to_edges))
+    #for idx, edge in enumerate(edges):
+    #    pdb.gimp_message("{i} edge: {e}".format(i=idx, e=edge))
 
     # TODO - next, feed each edge into the reduction algo
+    reduced_edges = []
+    for edge in edges:
+        if len(edge) > 4: 
+            reduced_edges.append(rdpReduce(edge))
+            pdb.gimp_message("edge: {e}".format(e=edge))
+            pdb.gimp_message("reduced edge: {e}".format(e=rdpReduce(edge)))
+        else:
+            reduced_edges.append(edge)
 
-    # so how do we properly process all shared edges?
-    pdb.gimp_message("sub array: {a}".format(a=find_all_common_subarrays(section_points[0], list(reversed(section_points[1])))))
+    # map reduced edges to polygons
+    polygons = []
+    for key, val in sections_to_edges.iteritems():
+        points = [] 
+        for idx in val:
+           points += reduced_edges[idx]
+
+        polygons.append(points)
+   
+    for polygon in polygons:
+        pdb.gimp_message("polygon: {p}".format(p=polygon)) # TODO - if you want this to be ordered use the old section_points var to get the correct wraping
 
     return "hello"
+
+
+def get_ajacent_point(point, all_points):
+    possible_next_points = [
+        (point[0], point[1] - 1),
+        (point[0], point[1] + 1),
+        (point[0] - 1, point[1]),
+        (point[0] + 1, point[1])
+            ]
+    for idx, all_point in enumerate(all_points):
+        if all_point in possible_next_points:
+            return idx
+
+    return -1
 
 
 def get_pixels(img, draw):
@@ -600,6 +629,44 @@ def subtract_subarrays(current, common_edges):
     return result
 
 
+def dist(p1, p2):
+    return pow(pow(p1[0] - p2[0], 2) + pow(p1[1] - p2[1], 2), 0.5)
+
+
+def dist_line(p, l0, l1):
+    return abs(((l1[1] - l0[1]) * p[0]) - ((l1[0] - l0[0]) * p[1]) + (l1[0] * l0[1]) - (l1[1] * l0[0])) / dist(l0, l1)
+
+
+# NOTE - you need at least 4 points for this to work
+def rdpReduce(l):
+    result = []
+    e = 0
+    dmax = 0
+    index = 0
+    #pdb.gimp_message("line: {a}, {b}".format(a=l[0], b=l[len(l) - 1]))
+    for x in range(1, len(l) - 1):
+        d = dist_line(l[x], l[0], l[len(l) - 1])
+        #pdb.gimp_message("index: {x}, val: {v}, dist: {d}".format(x=x, v=l[x], d=d))
+        if d > dmax:
+            dmax = d
+            index = x
+
+    if dmax > e:
+        #pdb.gimp_message("furthest index: {i}, val: {v}, dist: {d}".format(i=index, v=l[index], d=dmax))
+        #pdb.gimp_message("passing in front: {f}".format(f=l[0:index]))
+        result += rdpReduce(l[0:index])
+        #pdb.gimp_message("resulting front half: {r}".format(r=result))
+        #pdb.gimp_message("passing in back: {b}".format(b=l[index + 1:len(l)]))
+        result += rdpReduce(l[index + 1:len(l)])
+        #pdb.gimp_message("resulting back half added: {r}".format(r=result))
+    elif len(l) > 1:
+        result += [l[0], l[len(l) - 1]]
+    else:
+        result += [l[0]]
+
+    return result
+
+
 def process_image(img, drw):
     pdb.gimp_message("processing image...")
     
@@ -608,32 +675,17 @@ def process_image(img, drw):
     
     vectorize(pixels, img)
 
-    #link = ((0, 1), (0, 2))
-    #links = [((1, 0), (0, 0)), ((0,2),(1,2)), ((0,3),(0,2)), ((0, 4), (0,3))]
-    #pdb.gimp_message("next: {a}".format(a=get_next_clockwise_link(link, links)))
-
-    #a = [(1,2),(2,2),(2,1),(2,0),(1,0),(0,0),(0,1),(0,2),(1,2)]
-    #a = list(reversed(a))
-    #b = [(3,4),(4,4),(4,3),(4,2),(4,1),(4,0),(3,0),(2,0),(2,1),(2,2),(1,2),(0,2),(0,3),(0,4),(1,4),(2,4),(3,4)] 
-    
-    # this should return [(2,0),(0,0)] once we enable wrapping
-    #a = [(0,0),(1,0),(2,0)]
-    #b = [(2,1),(2,0),(0,0)]
-    #pdb.gimp_message("test: {a}".format(a=find_all_common_subarrays(a, b)))
-
-    #a = [(0,0),(1,0),(2,0),(3,0),(4,0)]
-    #b = [[(1, 0),(2,0)],[(0,0)]]
-    #pdb.gimp_message("remaining: {a}".format(a=subtract_subarrays(a, b))) 
-    #pdb.gimp_message("original a: {a}".format(a=a)) 
-
-    #m = {0: [0,1,2], 1: [1, 2, 3]}
-    #old = 1
-    #new = [8, 9]
-    #replace_map_values(m, old, new)
-    #pdb.gimp_message("test: {a}".format(a=m))
-
     #edge = [(0,0),(1,0),(2,0),(3,0)]
     #pdb.gimp_message("test: {a}".format(a=split_edge(edge, (1,0))))
+
+    #line = [(8,0),(7,0),(6,0),(5,0),(4,0),(3,0),(2,0),(1,0),(0,0),(0,1),(0,2),(0,3),(0,4),(0,5),(0,6)]
+    #pdb.gimp_message("original list: {o} reduced list: {r}".format(o=line, r=rdpReduce(line)))
+
+    #p0 = (0, 0)
+    #p1 = (0, 8)
+    #p2 = (8, 0)
+    #pdb.gimp_message("distance: {d}".format(d=dist_line(p0, p1, p2)))
+
 
 register(
     "python_fu_vectorize_sky",
