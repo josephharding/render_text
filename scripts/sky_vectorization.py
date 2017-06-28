@@ -426,32 +426,30 @@ def vectorize(pixels, img):
             reduced_edges.append(edge)
 
     # map reduced edges to polygons
+    # TODO - should we try to use the original version and not modify is in calculate_shared_edges?
+    section_points = make_point_borders(pixels, sections, img.width, img.height)
     polygons = []
     for key, val in sections_to_edges.iteritems():
         points = [] 
         for idx in val:
            points += reduced_edges[idx]
 
-        polygons.append(points)
-   
-    for polygon in polygons:
-        pdb.gimp_message("polygon: {p}".format(p=polygon)) # TODO - if you want this to be ordered use the old section_points var to get the correct wraping
+        polygons.append(reorder_points(points, section_points[key]))
+ 
+    pixel_groups = []
+    for idx, polygon in enumerate(polygons):
+        pdb.gimp_message("polygon: {p}".format(p=polygon))
+       
+        pixel_group  = []
+        for point in polygon:
+            pixel_group.append(ij_to_idx(img.height, point[0] - 1, point[1] - 1))
+    
+        pixel_groups.append(pixel_group)
 
+    pdb.gimp_message("pixel groups: {p}".format(p=pixel_groups))
+    draw_pixel_groups_to_layers(pixel_groups, img, "vertex")
+    
     return "hello"
-
-
-def get_ajacent_point(point, all_points):
-    possible_next_points = [
-        (point[0], point[1] - 1),
-        (point[0], point[1] + 1),
-        (point[0] - 1, point[1]),
-        (point[0] + 1, point[1])
-            ]
-    for idx, all_point in enumerate(all_points):
-        if all_point in possible_next_points:
-            return idx
-
-    return -1
 
 
 def get_pixels(img, draw):
@@ -667,6 +665,16 @@ def rdpReduce(l):
     return result
 
 
+# reorder points to appear in order as they do in the reference array
+def reorder_points(points, reference):
+    result = []
+    for reference_point in reference:
+        if reference_point in points:
+            result.append(reference_point)
+
+    return result
+
+
 def process_image(img, drw):
     pdb.gimp_message("processing image...")
     
@@ -680,11 +688,6 @@ def process_image(img, drw):
 
     #line = [(8,0),(7,0),(6,0),(5,0),(4,0),(3,0),(2,0),(1,0),(0,0),(0,1),(0,2),(0,3),(0,4),(0,5),(0,6)]
     #pdb.gimp_message("original list: {o} reduced list: {r}".format(o=line, r=rdpReduce(line)))
-
-    #p0 = (0, 0)
-    #p1 = (0, 8)
-    #p2 = (8, 0)
-    #pdb.gimp_message("distance: {d}".format(d=dist_line(p0, p1, p2)))
 
 
 register(
