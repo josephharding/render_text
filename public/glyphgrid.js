@@ -6,7 +6,8 @@ GlyphGrid.prototype._program;
 GlyphGrid.prototype._image_dim;
 GlyphGrid.prototype._glyph_dim;
 
-function GlyphGrid(gl, image, glyph_dim) {
+function GlyphGrid(gl, uv_source, image, glyph_dim) {
+  this._uv_source = uv_source;
   this._texture = gl.createTexture();
   this._image_dim = image.height;
   if(image.width != this._image_dim) {
@@ -28,43 +29,48 @@ function GlyphGrid(gl, image, glyph_dim) {
 GlyphGrid.prototype.updateText = function(text) {
   var scaled_glyph_dim = this._glyph_dim / this._image_dim;
 
-  // NOTE: space at end of string
-  var alphabet = 'abcdefghijklmnopqrstuvwxyz ';
+  var alphabet = 'abcdefghijklmnopqrstuvwxyz';
 
-  var x = 0;
-  var y = 0;
   var glyph_uv_map = {};
-  for(let c of alphabet) {
+  for(var c of alphabet) {
+    var idx = alphabet.indexOf(c) * 4; 
     glyph_uv_map[c] = {
-      x: x,
-      y: y
+      left: this._uv_source['uvs'][idx],
+      right: this._uv_source['uvs'][idx + 1],
+      top: this._uv_source['uvs'][idx + 2],
+      bottom: this._uv_source['uvs'][idx + 3]
     };
-    x += 1; 
-    if(x * this._glyph_dim == this._image_dim) {
-      x = 0;
-      y++;
-    }
   }
+ 
+  // TODO - very hacky way to support spaces
+  glyph_uv_map[' '] = {
+    left: 0,
+    right: 0.08,
+    top: 0,
+    bottom: 0
+  };
 
+  var spaces = [];
+  var dims = [];
   this._uvs = [];
 	for(var i = 0; i < text.length; i++) {
     if(text[i] in glyph_uv_map) {
       var coords = glyph_uv_map[text[i]];
-      var origin_x = coords.x * scaled_glyph_dim;
-      var origin_y = 1 - (coords.y * scaled_glyph_dim) - scaled_glyph_dim;
 
-      this._uvs = this._uvs.concat([origin_x, origin_y]);
-      this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y]);
-      this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y + scaled_glyph_dim]);
-      this._uvs = this._uvs.concat([origin_x + scaled_glyph_dim, origin_y + scaled_glyph_dim]);
-      this._uvs = this._uvs.concat([origin_x, origin_y + scaled_glyph_dim]);
-      this._uvs = this._uvs.concat([origin_x, origin_y]);		
+      this._uvs = this._uvs.concat([coords.left, coords.bottom]);
+      this._uvs = this._uvs.concat([coords.right, coords.bottom]);
+      this._uvs = this._uvs.concat([coords.right, coords.top]);
+      this._uvs = this._uvs.concat([coords.right, coords.top]);
+      this._uvs = this._uvs.concat([coords.left, coords.top]);
+      this._uvs = this._uvs.concat([coords.left, coords.bottom]);		
+
+      dims.push(coords.right - coords.left);
+      dims.push(coords.top - coords.bottom);
     } else {
       console.log("error: specified a character not in the glyph texture atlas!");
     }
   }
-  // TODO - we don't handle strings longer than 8 characters right now
-  this._grid = new Grid(scaled_glyph_dim, scaled_glyph_dim, text.length, 1, this._uvs, gl);
+  this._grid = new Grid(dims, text.length, this._uvs, gl);
 };
 
 GlyphGrid.prototype.draw = function(gl) {

@@ -51,7 +51,8 @@ Renderer.prototype.draw = function (text, thing, thingTwo) {
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
 
 	// start drawing test 3D scene
-	this._gl.useProgram(this.three_program);
+  /*	
+  this._gl.useProgram(this.three_program);
 
   mat4.identity(this.modelView); 
   
@@ -92,7 +93,7 @@ Renderer.prototype.draw = function (text, thing, thingTwo) {
   
   this._gl.disable(this._gl.DEPTH_TEST);
 	//this._gl.disable(this._gl.CULL_FACE);
-	
+  */	
   text.draw(this._gl);
 	
   this.r++;

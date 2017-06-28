@@ -61,13 +61,14 @@
 		
     uniform vec2 u_resolution;
     uniform vec2 u_scale;
+    uniform vec2 u_offset;
 		
     out vec2 v_uv;
 		
 		void main() {
     	v_uv = a_uv;
     	vec2 aspected = vec2(a_position.x / u_resolution.x, a_position.y / u_resolution.y) * u_resolution.x;
-    	gl_Position = vec4((u_scale * aspected) + a_offset, 0, 1);
+    	gl_Position = vec4((u_scale * aspected) + u_offset, 0, 1);
   	}
   </script>
   <script id="glyph-grid-fs" type="x-shader/x-fragment">#version 300 es

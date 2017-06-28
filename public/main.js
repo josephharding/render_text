@@ -88,15 +88,16 @@ window.onload = function() {
 
   Promise.all([
     loadResource('test.json'),
-    loadImage('alphabet.png'),
-    loadImage('sparrow_texture.png')
+    loadImage('sparrow_texture.png'),
+    loadResource('alpha.json'),
+    loadImage('alpha_plex.png')
   ])
   .then(data => {
-    _thing = new Thing(gl, JSON.parse(data[0]), data[2]);
-    _thingTwo = new Thing(gl, JSON.parse(data[0]), data[2]);
+    _thing = new Thing(gl, JSON.parse(data[0]), data[1]);
+    _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1]);
     
-    _text = new RenderText(gl, data[1], 32);
-    _text.updateText('abc');
+    _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
+    _text.updateText('joe');
     
     _renderer.init(gl);
     renderTick(); 
