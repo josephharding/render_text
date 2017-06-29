@@ -13,8 +13,10 @@ function Renderer() {
 Renderer.prototype.init = function (gl) {
   this._gl = gl;	
 
-	this.three_program = createProgram(gl, getShader(gl, "thing-vs"), getShader(gl, "thing-fs"));
+  this._color_quad = new ColorQuad(gl);
 
+	this.three_program = createProgram(gl, getShader(gl, "thing-vs"), getShader(gl, "thing-fs"));
+	
   this.modelViewUL = this._gl.getUniformLocation(this.three_program, "u_modelView");
   this.projectionUL = this._gl.getUniformLocation(this.three_program, "u_projection");
   this.imageUL = this._gl.getUniformLocation(this.three_program, "u_image");
@@ -94,8 +96,10 @@ Renderer.prototype.draw = function (text, thing, thingTwo) {
   this._gl.disable(this._gl.DEPTH_TEST);
 	//this._gl.disable(this._gl.CULL_FACE);
   */	
+  this._color_quad.draw(gl);
+  
   text.draw(this._gl);
-	
+
   this.r++;
 };
 
