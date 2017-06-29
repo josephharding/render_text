@@ -97,7 +97,7 @@ window.onload = function() {
     _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1]);
     
     _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
-    _text.updateText('joe');
+    _text.updateText('hello world');
     
     _renderer.init(gl);
     renderTick(); 

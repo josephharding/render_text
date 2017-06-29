@@ -73,6 +73,15 @@ GlyphGrid.prototype.updateText = function(text) {
   this._grid = new Grid(dims, text.length, this._uvs, gl);
 };
 
+
+GlyphGrid.prototype.getWidth = function() {
+  if(this._grid) {
+    return this._grid.getWidth();
+  } else {
+    return 0;
+  }
+};
+
 GlyphGrid.prototype.draw = function(gl) {
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, this._texture);

@@ -57,32 +57,76 @@
   
 		in vec2 a_position;
 		in vec2 a_uv;
-		in vec2 a_offset;
 		
     uniform vec2 u_resolution;
     uniform vec2 u_scale;
     uniform vec2 u_offset;
 		
     out vec2 v_uv;
+    out vec2 v_position;
 		
 		void main() {
     	v_uv = a_uv;
+    	v_position = a_position;
     	vec2 aspected = vec2(a_position.x / u_resolution.x, a_position.y / u_resolution.y) * u_resolution.x;
     	gl_Position = vec4((u_scale * aspected) + u_offset, 0, 1);
   	}
   </script>
   <script id="glyph-grid-fs" type="x-shader/x-fragment">#version 300 es
 
+    #define M_PI 3.1415926535897932384626433832795
+
 		precision mediump float;
 		
     in vec2 v_uv;
+    in vec2 v_position;
     
     uniform sampler2D u_image;
+    uniform float u_time;
+    uniform float u_word_width;
 		 
     out vec4 outColor;
-		
+ 
+    vec2 get_loop_stripe_bounds(float thickness, float pos) {
+     
+      float scaled_time = u_time / 3000.0;
+      float stripe_offset = pos * thickness;
+
+      float left_x = mod(scaled_time + stripe_offset, u_word_width);
+      float right_x = mod(scaled_time + stripe_offset + thickness, u_word_width);
+
+      return vec2(left_x, right_x);
+    }
+
     void main() {
-			outColor = vec4(0.3, 1, 0.3, 1) * texture(u_image, v_uv);
+      vec3 color = vec3(0.3, 0.0, 0.0);
+  
+      vec3 color_arr[5] = vec3[](
+        vec3(255.0 / 255.0, 83.0 / 255.0, 13.0 / 255.0),
+        vec3(232.0 / 255.0, 44.0 / 255.0, 12.0 / 255.0),
+        vec3(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0),
+        vec3(232.0 / 255.0, 12.0 / 255.0, 122.0 / 255.0),
+        vec3(255.0 / 255.0, 13.0 / 255.0, 255.0 / 255.0));
+
+      vec2 arr[5] = vec2[](
+        get_loop_stripe_bounds(u_word_width / 5.0, 0.0),
+        get_loop_stripe_bounds(u_word_width / 5.0, 1.0),
+        get_loop_stripe_bounds(u_word_width / 5.0, 2.0),
+        get_loop_stripe_bounds(u_word_width / 5.0, 3.0),
+        get_loop_stripe_bounds(u_word_width / 5.0, 4.0));
+
+      for(int i = 0; i < arr.length(); i++) {
+        float s_min = arr[i][0]; 
+        float s_max = arr[i][1]; 
+        // cover three cases that arise from wrapping logic
+        if((v_position[0] > s_min && v_position[0] < s_max && s_min < s_max) ||
+        (s_max < s_min && v_position[0] < s_max) ||
+        (v_position[0] > s_min && s_max < s_min)) {
+          color = color_arr[i];
+        }
+      }
+
+			outColor = vec4(color, 1) * texture(u_image, v_uv);
   	}
   </script>
   <script id="text-quad-vs" type="x-shader/x-vertex">#version 300 es

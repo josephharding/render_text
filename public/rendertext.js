@@ -10,7 +10,7 @@ RenderText.prototype._quad_program;
 function RenderText(gl, uv, image, image_dim) {
   this._start_time = Date.now();
   this._draw_scale = 1.0;
-  this._offset = [-0.6, 0.0];
+  this._offset = [-1.0, 0.0]; // this value is -1 to 1
 
   this._glyph_program = createProgram(gl,
     getShader(gl, "glyph-grid-vs"), getShader(gl, "glyph-grid-fs"));
@@ -22,9 +22,11 @@ function RenderText(gl, uv, image, image_dim) {
   this.scaleUL = gl.getUniformLocation(this._glyph_program, "u_scale");
   this.offsetUL = gl.getUniformLocation(this._glyph_program, "u_offset");
   this.imageUL = gl.getUniformLocation(this._glyph_program, "u_image");
+  this.timeUL = gl.getUniformLocation(this._glyph_program, "u_time");
+  this.wordWidthUL = gl.getUniformLocation(this._glyph_program, "u_word_width");
 
   this.q_resolutionUL = gl.getUniformLocation(this._quad_program, "u_resolution");
-  this.timeUL = gl.getUniformLocation(this._quad_program, "u_time");
+  this.q_timeUL = gl.getUniformLocation(this._quad_program, "u_time");
   this.q_imageUL = gl.getUniformLocation(this._quad_program, "u_image");
 
   /*
@@ -71,6 +73,8 @@ RenderText.prototype.draw = function(gl) {
   gl.useProgram(this._glyph_program);
 
   gl.uniform1i(this.imageUL, 0);
+  gl.uniform1f(this.timeUL, Date.now() - this._start_time);
+  gl.uniform1f(this.wordWidthUL, this._glyph.getWidth());
   gl.uniform2f(this.scaleUL, this._draw_scale, this._draw_scale);
   gl.uniform2f(this.offsetUL, this._offset[0], this._offset[1]);
 	gl.uniform2f(this.resolutionUL, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -92,7 +96,7 @@ RenderText.prototype.draw = function(gl) {
 	gl.useProgram(this._quad_program);
 
   gl.uniform1i(this.q_imageUL, 0);
-  gl.uniform1f(this.timeUL, Date.now() - this._start_time);
+  gl.uniform1f(this.q_timeUL, Date.now() - this._start_time);
   gl.uniform2f(this.q_resolutionUL,
   	gl.drawingBufferWidth, gl.drawingBufferHeight);
 
@@ -101,10 +105,10 @@ RenderText.prototype.draw = function(gl) {
 	/* 
 	gl.bindTexture(gl.TEXTURE_2D, this._texture);
   gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0,
-    gl.drawingBufferWidth, gl.drawingBufferHeight, 0);
+  gl.drawingBufferWidth, gl.drawingBufferHeight, 0);
 	*/
 
-  this._quad.draw(gl, this._texture);
+  //this._quad.draw(gl, this._texture);
 
   // now a final pass drawing the glyphs directly on the screen (not a frame buffer now)
   gl.useProgram(this._glyph_program);
