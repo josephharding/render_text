@@ -3,13 +3,7 @@ var _renderer;
 var _text;
 var _thing;
 var _thingTwo;
-
-function renderTick() {
-	setTimeout(function() {
-		requestAnimationFrame(renderTick);
-	}, 40);
-	_renderer.draw(_text, _thing, _thingTwo);
-};
+var _colorQuad;
 
 function loadResource(path) {
   return new Promise((resolve, reject) => {
@@ -77,6 +71,12 @@ function createProgram(gl, vertexShader, fragmentShader) {
   gl.deleteProgram(program);
 }
 
+function renderTick() {
+	setTimeout(function() {
+		requestAnimationFrame(renderTick);
+	}, 40);
+	_renderer.draw(_text, _thing, _thingTwo, _colorQuad);
+};
 
 window.onload = function() {  
   var canvas = document.getElementById("canvas");
@@ -87,10 +87,11 @@ window.onload = function() {
   _renderer = new Renderer();
 
   Promise.all([
-    loadResource('test.json'),
-    loadImage('sparrow_texture.png'),
-    loadResource('alpha.json'),
-    loadImage('alpha_plex.png')
+    loadResource('data/test.json'),
+    loadImage('images/sparrow_texture.png'),
+    loadResource('data/alpha.json'),
+    loadImage('images/alpha_plex.png'),
+    loadResource('data/paint.json')
   ])
   .then(data => {
     _thing = new Thing(gl, JSON.parse(data[0]), data[1]);
@@ -98,7 +99,9 @@ window.onload = function() {
     
     _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
     _text.updateText('hello world');
-    
+   
+    _colorQuad = new ColorQuad(gl, JSON.parse(data[4]));
+
     _renderer.init(gl);
     renderTick(); 
   }); 

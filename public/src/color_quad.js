@@ -3,25 +3,10 @@ ColorQuad.prototype._vao;
 ColorQuad.prototype._positions;
 ColorQuad.prototype._colors;
 
-function ColorQuad(gl) {
+function ColorQuad(gl, data) {
 
-  this._colors = [
-    1, 0, 0,
-    0, 1, 1,
-    1, 0, 1,
-    1, 0, 0,
-    1, 1, 1,
-    1, 0, 1
-  ];
-
- 	this._positions = [
-    -1, -1,
-    -1, 1,
-    1, 1,
-    -1, -1,
-    1, -1,
-    1, 1
-  ];
+  this._colors = data.colors;
+ 	this._positions = data.positions;
   
   this._program = createProgram(gl, getShader(gl, "color-vs"), getShader(gl, "color-fs"));
 	this._posAL = gl.getAttribLocation(this._program, "a_position");

@@ -13,8 +13,6 @@ function Renderer() {
 Renderer.prototype.init = function (gl) {
   this._gl = gl;	
 
-  this._color_quad = new ColorQuad(gl);
-
 	this.three_program = createProgram(gl, getShader(gl, "thing-vs"), getShader(gl, "thing-fs"));
 	
   this.modelViewUL = this._gl.getUniformLocation(this.three_program, "u_modelView");
@@ -40,7 +38,7 @@ Renderer.prototype.init = function (gl) {
     this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 1, 100);
 };
 
-Renderer.prototype.draw = function (text, thing, thingTwo) {
+Renderer.prototype.draw = function (text, thing, thingTwo, color_quad) {
   // the buffer width and height are controlled by the canvas atts width and height 
   this._gl.viewport(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
@@ -96,7 +94,7 @@ Renderer.prototype.draw = function (text, thing, thingTwo) {
   this._gl.disable(this._gl.DEPTH_TEST);
 	//this._gl.disable(this._gl.CULL_FACE);
   */	
-  this._color_quad.draw(gl);
+  color_quad.draw(gl);
   
   text.draw(this._gl);
 
