@@ -74,7 +74,7 @@ function createProgram(gl, vertexShader, fragmentShader) {
 function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
-	}, 40);
+	}, 100);
 	_renderer.draw(_text, _thing, _thingTwo, _colorQuad);
 };
 

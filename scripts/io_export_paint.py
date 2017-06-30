@@ -46,9 +46,6 @@ class JoePaint(bpy.types.Operator, ExportHelper):
             normals = []
             colors = []
 
-            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            for data in active_data.vertex_colors.active.data:
-                colors.append(data.color)
 
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
             bm = bmesh.from_edit_mesh(active_data)
@@ -67,6 +64,10 @@ class JoePaint(bpy.types.Operator, ExportHelper):
                     normals.append(loop.vert.normal)
                     #colors.append((0, 0, 0))
                     i = i + 1
+            
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            for data in active_data.vertex_colors.active.data:
+                colors.append(data.color)
  
             self.write_file(indices, verts, normals, colors) 
         
