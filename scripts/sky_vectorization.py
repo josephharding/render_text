@@ -92,6 +92,44 @@ def make_sections(pixels, width, height):
         if len(new_section) > 0:
             sections.append(new_section)
 
+    # check if any section entirely surrounds another section, if it does split
+    # the containing section in half along some line TBD so the surrounded
+    # section is then bordered by more than one section
+    section_neighbor_sets = {}
+    for idx, pixel in enumerate(pixels):
+        section_index = get_section_index(idx, sections) 
+        neighbors = [
+            get_pixel_right(width, height, idx),
+            get_pixel_left(width, height, idx),
+            get_pixel_above(width, height, idx),
+            get_pixel_below(width, height, idx)
+            ]
+
+        if section_index not in section_neighbor_sets:
+            section_neighbor_sets[section_index] = set()
+
+        for neighbor in neighbors:
+            neighbor_section = get_section_index(neighbor, sections)
+            if section_index != neighbor_section:
+                section_neighbor_sets[section_index].add(neighbor_section) 
+
+    for key in section_neighbor_sets:
+        # if a section has only one neighbor that means it's surrounded
+        # let's split up that surrounding section so we wrap in the right direction later on
+        if len(section_neighbor_sets[key]) == 1:
+            problem_section = section_neighbor_sets[key].pop()
+            
+            points = []
+            for idx in sections[key]:
+                points.append(idx_to_ij(width, height, idx))
+
+            left, right = split_section(width, height, sections[problem_section], get_middle_point(points))
+            del sections[problem_section]
+            sections.append(left)
+            sections.append(right)
+            pdb.gimp_message("new left: {l}, new right: {r}".format(l=left, r=right))
+
+
     return sections
 
 
@@ -176,6 +214,7 @@ def link_in_links(target_link, links):
                 break
 
         if found:
+            #pdb.gimp_message("found target link: {t} in all links: {a} at: {l}".format(t=target_link, a=links, l=l_idx))
             return l_idx
 
     return -1
@@ -236,16 +275,16 @@ def order_link(tail, next_tail):
 def link_up(links):
     chain = [links.pop()]
     while len(links) > 0:
-        #pdb.gimp_message("link up iteration: {a}".format(a=links))
         next_idx = get_next_clockwise_link(chain[-1], links)
         if next_idx > -1:
-            #pdb.gimp_message("linked at {i}".format(i=next_idx))
             chain.append(order_link(chain[-1], links[next_idx]))
             del links[next_idx] 
 
         else:
-            pdb.gimp_message("ERROR: couldn't find link to {l} in {a}, existing chain was: {c}".format(l=active_chain[-1], a=links, c=active_chain))
+            pdb.gimp_message("couldn't find link to {l} in {a}".format(l=chain[-1], a=links))
+            break
 
+    pdb.gimp_message("link up loop complete")
     # convert chain of links into list of points
     points = []
     for pairs in chain: # NOTE - this step stops the completion of the chain into a loop
@@ -255,7 +294,16 @@ def link_up(links):
            points.append(pairs[1])  
 
     #points.append(points[0]) # complete the loop here # TODO - this breaks calculating proper wrapping
-    return points
+    return points, links
+
+
+def build_all_links(links):
+    result = [] 
+    while len(links) > 0:
+        points, links = link_up(links)
+        result.append(points)
+    
+    return result
 
 
 def make_point_borders(pixels, sections, width, height):
@@ -269,25 +317,28 @@ def make_point_borders(pixels, sections, width, height):
             else: 
                 links[section_index] = section_links
 
-    #pdb.gimp_message("links: {u}".format(u=links))
+    pdb.gimp_message("links: {u}".format(u=links))
     result = []
     for key, val in links.iteritems():
-        result.append(link_up(val))
+        pdb.gimp_message("link set: {u}".format(u=val))
+        result += build_all_links(val)
 
     return result
 
 
-def calculate_shared_edges(section_points):
+def calculate_shared_edges(border_points):
     edges = [] # list of lists, index is edge id, value is the list of points in that edge 
     sections_to_edges = {} # map of sections to array of edges that make up that section 
 
     edge_wrapped_for = {} # TODO - better way to keep track of which direction something was wrapped for?
     c_idx = 0
-    while len(section_points) > 0:
-        current = section_points.pop(0) 
+    pdb.gimp_message("border points: {a}".format(a=border_points))
+    while len(border_points) > 0:
+        current_border = border_points.pop(0) 
 
-        for idx, points in enumerate(section_points):
-            common_edges = find_all_common_subarrays(current, list(reversed(points)))
+        for idx, points in enumerate(border_points):
+            common_edges = find_all_common_subarrays(current_border, list(reversed(points)))
+            pdb.gimp_message("common edges: {a}".format(a=common_edges))
             for common_edge in common_edges:
 
                 edges.append(common_edge)
@@ -303,13 +354,15 @@ def calculate_shared_edges(section_points):
 
         # deal with any non-shared edges
         shared_edges = []
-        for edge_id in sections_to_edges[c_idx]:
-            if edge_wrapped_for[edge_id] == c_idx:
-                shared_edges.append(edges[edge_id])
-            else:
-                shared_edges.append(list(reversed(edges[edge_id])))
+        if c_idx in sections_to_edges:
+            for edge_id in sections_to_edges[c_idx]:
+                pdb.gimp_message("edge id: {e}".format(e=edge_id))
+                if edge_wrapped_for[edge_id] == c_idx:
+                    shared_edges.append(edges[edge_id])
+                else:
+                    shared_edges.append(list(reversed(edges[edge_id])))
 
-        remaining_edges = subtract_subarrays(current, shared_edges)
+        remaining_edges = subtract_subarrays(current_border, shared_edges)
         for remaining_edge in remaining_edges:
             edges.append(remaining_edge)
             if c_idx not in sections_to_edges:
@@ -319,6 +372,7 @@ def calculate_shared_edges(section_points):
 
         c_idx += 1
 
+    pdb.gimp_message("hello there fellow")
     # last step is to remove duplicate edge entries (points that belong to 3 or 4 sections)
     found_map = {} 
     merged_list = [] 
@@ -404,14 +458,14 @@ def replace_map_values(m, old_item, new_items):
 
 def vectorize(pixels, img):
     sections = make_sections(pixels, img.width, img.height) 
-    #pdb.gimp_message("sections count: {a}".format(a=len(sections)))  
+    pdb.gimp_message("sections count: {a}".format(a=len(sections)))  
     #draw_pixel_groups_to_layers(sections, img, "section")
 
-    section_points = make_point_borders(pixels, sections, img.width, img.height)
-    #pdb.gimp_message("section border points: {b}".format(b=section_points))
+    border_points = make_point_borders(pixels, sections, img.width, img.height)
+    pdb.gimp_message("section border points count: {b}".format(b=len(border_points)))
 
-    edges, sections_to_edges = calculate_shared_edges(section_points)
-    #pdb.gimp_message("sections: {s}".format(s=sections_to_edges))
+    edges, sections_to_edges = calculate_shared_edges(border_points)
+    pdb.gimp_message("sections: {s}".format(s=sections_to_edges))
     #for idx, edge in enumerate(edges):
     #    pdb.gimp_message("{i} edge: {e}".format(i=idx, e=edge))
 
@@ -427,14 +481,14 @@ def vectorize(pixels, img):
 
     # map reduced edges to polygons
     # TODO - should we try to use the original version and not modify is in calculate_shared_edges?
-    section_points = make_point_borders(pixels, sections, img.width, img.height)
+    border_points = make_point_borders(pixels, sections, img.width, img.height)
     polygons = []
     for key, val in sections_to_edges.iteritems():
         points = [] 
         for idx in val:
            points += reduced_edges[idx]
 
-        polygons.append(reorder_points(points, section_points[key]))
+        polygons.append(reorder_points(points, border_points[key]))
  
     pixel_groups = []
     for idx, polygon in enumerate(polygons):
@@ -446,8 +500,8 @@ def vectorize(pixels, img):
     
         pixel_groups.append(pixel_group)
 
-    pdb.gimp_message("pixel groups: {p}".format(p=pixel_groups))
-    draw_pixel_groups_to_layers(pixel_groups, img, "vertex")
+    #pdb.gimp_message("pixel groups: {p}".format(p=pixel_groups))
+    #draw_pixel_groups_to_layers(pixel_groups, img, "vertex")
     
     return "hello"
 
@@ -504,12 +558,20 @@ def make_image():
 
 def find_all_common_subarrays(a, b):
     result = []
-    iters = 0
+   
+    # make a copy of a
+    new_a = []
+    for e in a:
+        new_a.append(e)
+   
+    a = new_a
+    
+    iters = 0 # TODO - remove this safety
     while True:
         iters += 1 
         a_idx, b_idx, span = find_longest_common_subarray(a, b)
         #pdb.gimp_message("sub array: {a}, {b}, {s}".format(a=a_idx, b=b_idx, s=span))
-        if span == 0 or iters > 10:
+        if span == 0 or iters > 1000:
             break
         else:
             # TODO - implement overflow logic here for when the end should wrap around to the front of the array
@@ -616,13 +678,15 @@ def subtract_subarrays(current, common_edges):
             if point in tmp:
                 del tmp[tmp.index(point)]
 
-    #pdb.gimp_message("subtract subarrays tmp: {c}, common: {e}".format(c=tmp, e=common_edges))
-    result = [[tmp.pop(0)]]
-    for point in tmp:
-        if is_point_ajacent(result[-1][-1], point):
-            result[-1].append(point)
-        else:
-            result.append([point])
+    pdb.gimp_message("subtract subarrays tmp: {c}, common: {e}".format(c=tmp, e=common_edges))
+    result = []
+    if len(tmp) > 0:
+        result.append([tmp.pop(0)])
+        for point in tmp:
+            if is_point_ajacent(result[-1][-1], point):
+                result[-1].append(point)
+            else:
+                result.append([point])
 
     return result
 
@@ -675,6 +739,45 @@ def reorder_points(points, reference):
     return result
 
 
+def dist(p0, p1):
+    return pow(pow(p0[0] - p1[0], 2) + pow(p0[1] - p1[1], 2), 0.5)
+
+
+# returns the point closest to the mean of all the pixels
+def get_middle_point(pixels):
+    pdb.gimp_message("pixels: {a}".format(a=pixels))
+    average = [0, 0] # tupeles are read only so we have to use a list here
+    for pixel in pixels:
+        average[0] = average[0] + pixel[0]
+        average[1] = average[1] + pixel[1]
+
+    average[0] = average[0] / len(pixels)
+    average[1] = average[1] / len(pixels)
+
+    min_dist = -1
+    min_idx = -1
+    for idx, pixel in enumerate(pixels):
+        if min_dist == -1 or dist(pixel, average) < min_dist:
+            min_dist = dist(pixel, average)
+            min_idx = idx
+
+    return pixels[min_idx]
+
+
+# we always split vertically, so we'll have a new left and a new right section from the original
+def split_section(width, height, original, split_point):
+    left = []
+    right = []
+    for idx in original:
+        i, j = idx_to_ij(width, height, idx)
+        if i > split_point[0]:
+            right.append(idx)
+        else:
+            left.append(idx)
+
+    return left, right
+
+
 def process_image(img, drw):
     pdb.gimp_message("processing image...")
     
@@ -688,6 +791,12 @@ def process_image(img, drw):
 
     #line = [(8,0),(7,0),(6,0),(5,0),(4,0),(3,0),(2,0),(1,0),(0,0),(0,1),(0,2),(0,3),(0,4),(0,5),(0,6)]
     #pdb.gimp_message("original list: {o} reduced list: {r}".format(o=line, r=rdpReduce(line)))
+    
+    #pixels = [(0,0),(1,0),(2,0),(3,0),(4,0), (1,0),(2,0),(1,1),(1,2)]
+    #pdb.gimp_message("middle: {a}".format(a=get_middle_point(pixels)))
+    #pdb.gimp_message("new sections: {a}".format(a=split_section(pixels, get_middle_point(pixels))))
+
+
 
 
 register(
