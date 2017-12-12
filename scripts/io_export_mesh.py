@@ -38,35 +38,42 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         print("### Mesh Export Script Start ###")
 
-        if len(bpy.context.selected_objects) > 0:
-            active_data = bpy.context.selected_objects[0].data
-
-            indices = []
-            verts = []
-            normals = []
-            uvs = []
-
-            bm = bmesh.from_edit_mesh(active_data)
-
-            bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
-
-            uv_layer = bm.loops.layers.uv.active
-            if not uv_layer: 
-                self.report({'ERROR'}, 'please create a uv layer!')
-            
-            i = 0 # TODO - so is there any advantage to using these indices?
-            for f in bm.faces:
-                for loop in f.loops:
-                    indices.append(i)
-                    verts.append(loop.vert.co)
-                    normals.append(loop.vert.normal)
-                    uvs.append(loop[uv_layer].uv)
-                    i = i + 1
- 
-            self.write_file(indices, verts, normals, uvs) 
+        bones = []
+        indices = []
+        verts = []
+        normals = []
+        uvs = []
         
-        else:
-            self.report({'ERROR'}, 'please select an oject to export')
+        for obj in bpy.data.objects: 
+            if obj.type == 'ARMATURE':
+                for bone in obj.data.bones: 
+                    bones.append({
+                        'name': bone.name,
+                        'head': list(bone.head_local),
+                        'tail': list(bone.tail_local)
+                        }) 
+
+            else:
+                bpy.ops.object.mode_set(mode='EDIT', toggle=False) 
+                bm = bmesh.from_edit_mesh(obj.data)
+                bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
+                uv_layer = bm.loops.layers.uv.active
+                if not uv_layer: 
+                    self.report({'ERROR'}, 'please create a uv layer!')
+                
+                i = 0 # TODO - so is there any advantage to using these indices?
+                for f in bm.faces:
+                    for loop in f.loops:
+                        indices.append(i)
+                        verts.append(loop.vert.co)
+                        normals.append(loop.vert.normal)
+                        uvs.append(loop[uv_layer].uv)
+                        i = i + 1
+
+
+
+        self.write_file(bones, indices, verts, normals, uvs) 
+        
 
         print("### Mesh Export Script End ###")
         # this lets blender know the operator finished successfully. 
@@ -74,7 +81,7 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
 
 
     # print out the mesh data to petgame xml
-    def write_file(self, indices, verts, normals, uvs):
+    def write_file(self, bones, indices, verts, normals, uvs):
         filepath = self.filepath
         filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
 
@@ -91,6 +98,14 @@ class JoeMesh(bpy.types.Operator, ExportHelper):
                 fw(',')
 
         fw(']')
+        fw(', "bones":')
+        fw('{')
+        for i, v in enumerate(bones):
+            fw('"{n}": {{ "head":{h},"tail":{t} }}'.format(n=v['name'], h=v['head'], t=v['tail']))
+            if i < len(bones) - 1:
+                fw(',')
+
+        fw('}')
         fw(', "verts":')
         fw('[')
         for i, val in enumerate(verts):

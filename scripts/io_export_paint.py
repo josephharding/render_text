@@ -16,6 +16,7 @@ import bmesh
 import io
 import os
 import pprint
+import random
 import mathutils
 
 from bpy_extras.io_utils import ExportHelper
@@ -46,29 +47,27 @@ class JoePaint(bpy.types.Operator, ExportHelper):
             normals = []
             colors = []
 
-
             bpy.ops.object.mode_set(mode='EDIT', toggle=False)
             bm = bmesh.from_edit_mesh(active_data)
-
-            # this seems to only work in vertex paint mode, also seems to work in object mode
-            # though you may need to enable the Option -> Vertex Color Paint
-            #active_data.vertex_colors.active.data[5].color
-            
-            bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
  
+            bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method=0, ngon_method=0)
+            
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+            color_source = []
+            for data in active_data.vertex_colors.active.data:
+                color_source.append(data.color)
+ 
+            bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+            bm = bmesh.from_edit_mesh(active_data)
             i = 0 # TODO - so is there any advantage to using these indices?
             for f in bm.faces:
                 for loop in f.loops:
                     indices.append(i)
                     verts.append(loop.vert.co)
                     normals.append(loop.vert.normal)
-                    #colors.append((0, 0, 0))
+                    colors.append(color_source[i])
                     i = i + 1
-            
-            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-            for data in active_data.vertex_colors.active.data:
-                colors.append(data.color)
- 
+             
             self.write_file(indices, verts, normals, colors) 
         
         else:
