@@ -6,6 +6,33 @@ var _thingTwo;
 var _orthoThing;
 var _colorQuad;
 
+function parseXMLMesh(raw) { 
+	let parser = new DOMParser();
+	let xmlDoc = parser.parseFromString(raw, "text/xml");
+
+	var vertices = [];
+	for(var vertex of xmlDoc.getElementsByTagName("vertex")) {
+		vertices.push(parseFloat(vertex.getAttribute("x")));
+		vertices.push(parseFloat(vertex.getAttribute("y")));
+		vertices.push(parseFloat(vertex.getAttribute("z")));
+	}
+
+	var uvs = [];
+	for(var uv of xmlDoc.getElementsByTagName("uv")) {
+		uvs.push(parseFloat(uv.getAttribute("u")));
+		// undo the flipping we do for some reason in the io_export_petgame_mesh.py script...
+		uvs.push(1.0 - parseFloat(uv.getAttribute("v")));
+	}
+
+	var indices = Array(vertices.length / 3).fill().map((x,i)=>i);
+
+	return {
+		"indices": indices,
+		"uvs": uvs,
+		"verts": vertices
+	};
+}
+
 function loadResource(path) {
   return new Promise((resolve, reject) => {
     var request = new XMLHttpRequest();
@@ -97,11 +124,15 @@ window.onload = function() {
     loadResource('data/paint.json'),
     loadResource('data/box.json'),
     loadImage('images/red.png'),
+    loadResource('data/mesh_person_harvest.xml'),
+    loadImage('images/uv_joe.png')
   ])
   .then(data => {
     _thing = new Thing(gl, JSON.parse(data[0]), data[1]);
     _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1]);
-    _orthoThing = new OrthoThing(gl, JSON.parse(data[5]), data[6]);
+    
+    //_orthoThing = new OrthoThing(gl, JSON.parse(data[5]), data[6]);
+    _orthoThing = new OrthoThing(gl, parseXMLMesh(data[7]), data[8]);
     
     _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
     _text.updateText('hello world');

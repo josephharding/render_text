@@ -60,7 +60,7 @@ Renderer.prototype.initOrtho = function (gl) {
   this.ortho = mat4.create();
     
   mat4.ortho(this.ortho, -this._gl.drawingBufferWidth / 2, this._gl.drawingBufferWidth / 2,
-    -this._gl.drawingBufferHeight / 2, this._gl.drawingBufferHeight / 2, 0, 1);
+    -this._gl.drawingBufferHeight / 2, this._gl.drawingBufferHeight / 2, -10, 10);
 };
 
 Renderer.prototype.drawOrtho = function (thing) {
@@ -74,7 +74,7 @@ Renderer.prototype.drawOrtho = function (thing) {
 
   mat4.identity(this.modelView); 
   
-  mat4.scale(this.modelView, this.modelView, vec3.fromValues(100, 100, 1));
+  mat4.scale(this.modelView, this.modelView, vec3.fromValues(1, 1, 1));
    
   this.mvPushMatrix();
 
