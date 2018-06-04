@@ -1,6 +1,6 @@
 
 Renderer.prototype.three_program;
-Renderer.prototype.basic_program;
+Renderer.prototype.ortho_program;
 
 Renderer.prototype.matrixML;
 Renderer.prototype.mvp;
@@ -12,6 +12,10 @@ function Renderer() {
 }
 
 Renderer.prototype.init = function (gl) {
+  this._gl = gl;
+};
+
+Renderer.prototype.initProjection = function (gl) {
   this._gl = gl;	
 
 	this.three_program = createProgram(gl, getShader(gl, "thing-vs"), getShader(gl, "thing-fs"));
@@ -36,18 +40,61 @@ Renderer.prototype.init = function (gl) {
   vec3.normalize(this.light, vec3.fromValues(1, 0, -1));
   
   mat4.perspective(this.projection, glMatrix.toRadian(120),
-    this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 1, 100);
+    this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 1, 100);  
 };
 
-Renderer.prototype.draw3d = function (thing, thingTwo) {
+Renderer.prototype.initOrtho = function (gl) {
+  this._gl = gl;	
+
+	this.ortho_program = createProgram(gl, getShader(gl, "ortho-vs"), getShader(gl, "ortho-fs"));
+	
+  this.modelViewUL = this._gl.getUniformLocation(this.ortho_program, "u_modelView");
+  this.orthoUL = this._gl.getUniformLocation(this.ortho_program, "u_ortho");
+  this.imageUL = this._gl.getUniformLocation(this.ortho_program, "u_image");
+  this.offsetUL = this._gl.getUniformLocation(this.ortho_program, "u_offset");
+	
+  console.log("t a_position:", gl.getAttribLocation(this.ortho_program, "a_position"));
+  console.log("t a_uv:", gl.getAttribLocation(this.ortho_program, "a_uv"));
+
+  this.modelView = mat4.create();
+  this.ortho = mat4.create();
+    
+  mat4.ortho(this.ortho, -this._gl.drawingBufferWidth / 2, this._gl.drawingBufferWidth / 2,
+    -this._gl.drawingBufferHeight / 2, this._gl.drawingBufferHeight / 2, 0, 1);
+};
+
+Renderer.prototype.drawOrtho = function (thing) {
   // the buffer width and height are controlled by the canvas atts width and height 
   this._gl.viewport(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+  
+	this._gl.clearColor(0, 0, 0, 1);
+	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
 
-  /*
-  console.log("this._gl.drawingBufferWidth:", this._gl.drawingBufferWidth); // 300
-  console.log("this._gl.drawingBufferHeight:", this._gl.drawingBufferHeight); // 150
-  */
+  this._gl.useProgram(this.ortho_program);
 
+  mat4.identity(this.modelView); 
+  
+  mat4.scale(this.modelView, this.modelView, vec3.fromValues(100, 100, 1));
+   
+  this.mvPushMatrix();
+
+  this._gl.uniformMatrix4fv(this.modelViewUL, false, this.modelView);	
+  this._gl.uniformMatrix4fv(this.orthoUL, false, this.ortho);	
+  this._gl.uniform1i(this.imageUL, 0);
+  
+  this._gl.enable(this._gl.DEPTH_TEST); 
+
+  thing.draw(this.offsetUL, this._gl);
+  
+  this.mvPopMatrix();
+  
+  this._gl.disable(this._gl.DEPTH_TEST);
+};
+
+Renderer.prototype.drawProjection = function (thing, thingTwo) {
+  // the buffer width and height are controlled by the canvas atts width and height 
+  this._gl.viewport(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+  
 	this._gl.clearColor(0, 0, 0, 1);
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
 

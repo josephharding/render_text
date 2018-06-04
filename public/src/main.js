@@ -3,6 +3,7 @@ var _renderer;
 var _text;
 var _thing;
 var _thingTwo;
+var _orthoThing;
 var _colorQuad;
 
 function loadResource(path) {
@@ -75,8 +76,9 @@ function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
 	}, 100);
-	//_renderer.draw3d(_thing, _thingTwo);
-	_renderer.draw(_text, _colorQuad);
+	//_renderer.drawProjection(_thing, _thingTwo);
+	_renderer.drawOrtho(_orthoThing);
+	//_renderer.draw(_text, _colorQuad);
 };
 
 window.onload = function() {  
@@ -92,18 +94,23 @@ window.onload = function() {
     loadImage('images/sparrow_texture.png'),
     loadResource('data/alpha.json'),
     loadImage('images/alpha_plex.png'),
-    loadResource('data/paint.json')
+    loadResource('data/paint.json'),
+    loadResource('data/box.json'),
+    loadImage('images/red.png'),
   ])
   .then(data => {
     _thing = new Thing(gl, JSON.parse(data[0]), data[1]);
     _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1]);
+    _orthoThing = new OrthoThing(gl, JSON.parse(data[5]), data[6]);
     
     _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
     _text.updateText('hello world');
    
     _colorQuad = new ColorQuad(gl, JSON.parse(data[4]));
 
-    _renderer.init(gl);
+    //_renderer.initProjection(gl);
+    _renderer.initOrtho(gl);
+    //_renderer.init(gl);
     renderTick(); 
   }); 
   

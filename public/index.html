@@ -3,6 +3,7 @@
   <head> 
     <script src="lib/gl-matrix-min.js"></script>
     <script src="src/thing.js"></script>
+    <script src="src/orthothing.js"></script>
     <script src="src/quad.js"></script>
     <script src="src/color_quad.js"></script>
     <script src="src/grid.js"></script>
@@ -16,6 +17,37 @@
     <br/> 
     <input id="str" type="text"></input>
   </body>
+  <script id="ortho-vs" type="x-shader/x-vertex">#version 300 es
+
+    uniform mat4 u_ortho;
+    uniform mat4 u_modelView;
+    uniform vec3 u_offset;
+
+		in vec2 a_uv;
+		in vec4 a_position;
+
+		out vec2 v_uv;
+
+		void main() {
+     	v_uv = a_uv; 
+			gl_Position = u_ortho * u_modelView * a_position;
+			gl_Position.xyz += u_offset;
+  	}
+  </script>
+  <script id="ortho-fs" type="x-shader/x-fragment">#version 300 es
+
+		precision mediump float;
+		
+    uniform sampler2D u_image;
+   
+	 	in vec2 v_uv;
+
+    out vec4 outColor;
+		
+    void main() {
+			outColor = texture(u_image, v_uv);
+  	}
+  </script>
   <script id="thing-vs" type="x-shader/x-vertex">#version 300 es
 
     uniform mat4 u_projection;
