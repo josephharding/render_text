@@ -75,7 +75,8 @@ function renderTick() {
 	setTimeout(function() {
 		requestAnimationFrame(renderTick);
 	}, 100);
-	_renderer.draw(_text, _thing, _thingTwo, _colorQuad);
+	//_renderer.draw3d(_thing, _thingTwo);
+	_renderer.draw(_text, _colorQuad);
 };
 
 window.onload = function() {  

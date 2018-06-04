@@ -6,7 +6,7 @@ ColorQuad.prototype._colors;
 function ColorQuad(gl, data) {
 
   this._colors = data.colors;
- 	this._positions = data.verts;
+ 	this._positions = data.positions;
   
   this._program = createProgram(gl, getShader(gl, "color-vs"), getShader(gl, "color-fs"));
 	this._posAL = gl.getAttribLocation(this._program, "a_position");

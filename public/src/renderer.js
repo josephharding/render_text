@@ -1,5 +1,6 @@
 
 Renderer.prototype.three_program;
+Renderer.prototype.basic_program;
 
 Renderer.prototype.matrixML;
 Renderer.prototype.mvp;
@@ -20,7 +21,7 @@ Renderer.prototype.init = function (gl) {
   this.imageUL = this._gl.getUniformLocation(this.three_program, "u_image");
   this.lightUL = this._gl.getUniformLocation(this.three_program, "u_light");
   this.offsetUL = this._gl.getUniformLocation(this.three_program, "u_offset");
-
+	
   /*
   console.log("t a_position:", gl.getAttribLocation(this.three_program, "a_position"));
   console.log("t a_uv:", gl.getAttribLocation(this.three_program, "a_uv"));
@@ -38,7 +39,7 @@ Renderer.prototype.init = function (gl) {
     this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 1, 100);
 };
 
-Renderer.prototype.draw = function (text, thing, thingTwo, color_quad) {
+Renderer.prototype.draw3d = function (thing, thingTwo) {
   // the buffer width and height are controlled by the canvas atts width and height 
   this._gl.viewport(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
@@ -51,7 +52,6 @@ Renderer.prototype.draw = function (text, thing, thingTwo, color_quad) {
 	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
 
 	// start drawing test 3D scene
-  /*	
   this._gl.useProgram(this.three_program);
 
   mat4.identity(this.modelView); 
@@ -92,13 +92,23 @@ Renderer.prototype.draw = function (text, thing, thingTwo, color_quad) {
   this.mvPopMatrix();
   
   this._gl.disable(this._gl.DEPTH_TEST);
-	//this._gl.disable(this._gl.CULL_FACE);
-  */	
-  color_quad.draw(gl);
-  
-  text.draw(this._gl);
-
   this.r++;
+};
+
+Renderer.prototype.draw = function (text, color_quad) {
+  // the buffer width and height are controlled by the canvas atts width and height 
+  this._gl.viewport(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+
+  /*
+  console.log("this._gl.drawingBufferWidth:", this._gl.drawingBufferWidth); // 300
+  console.log("this._gl.drawingBufferHeight:", this._gl.drawingBufferHeight); // 150
+  */
+
+	this._gl.clearColor(0, 0, 0, 1);
+	this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
+
+  color_quad.draw(gl);
+  text.draw(this._gl);
 };
 
 Renderer.prototype.mvPushMatrix = function () {
