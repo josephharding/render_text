@@ -26,7 +26,7 @@ function GlyphGrid(gl, uv_source, image, glyph_dim) {
   gl.generateMipmap(gl.TEXTURE_2D);
 }
 
-GlyphGrid.prototype.updateText = function(text) {
+GlyphGrid.prototype.updateText = function(gl, text) {
   var scaled_glyph_dim = this._glyph_dim / this._image_dim;
 
   var alphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -49,7 +49,6 @@ GlyphGrid.prototype.updateText = function(text) {
     top: 0,
     bottom: 0
   };
-
   var spaces = [];
   var dims = [];
   this._uvs = [];
@@ -70,7 +69,7 @@ GlyphGrid.prototype.updateText = function(text) {
       console.log("error: specified a character not in the glyph texture atlas!");
     }
   }
-  this._grid = new Grid(dims, text.length, this._uvs, gl);
+	this._grid = new Grid(dims, text.length, this._uvs, gl);
 };
 
 

@@ -94,7 +94,7 @@ Renderer.prototype.draw = function (text, thing, thingTwo, color_quad) {
   this._gl.disable(this._gl.DEPTH_TEST);
 	//this._gl.disable(this._gl.CULL_FACE);
   */	
-  color_quad.draw(gl);
+  color_quad.draw(this._gl);
   
   text.draw(this._gl);
 

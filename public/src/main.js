@@ -80,7 +80,7 @@ function renderTick() {
 
 window.onload = function() {  
   var canvas = document.getElementById("canvas");
-  gl = canvas.getContext("webgl2");
+  var gl = canvas.getContext("webgl2");
   if(!gl) {
     console.log("dern! no webgl2");
   }
@@ -98,7 +98,7 @@ window.onload = function() {
     _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1]);
     
     _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
-    _text.updateText('hello world');
+    _text.updateText(gl, 'hello world');
    
     _colorQuad = new ColorQuad(gl, JSON.parse(data[4]));
 
@@ -107,6 +107,6 @@ window.onload = function() {
   }); 
   
   document.getElementById("str").addEventListener("input", function(e) {
-    _text.updateText(e.currentTarget.value);
+    _text.updateText(gl, e.currentTarget.value);
   });
 };

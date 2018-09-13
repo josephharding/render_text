@@ -7,7 +7,7 @@ Grid.prototype._width;
 function Grid(dims, len, uvs, gl) {
   this._uvs = uvs;
  	this._positions = [];
-  	
+
   this._width = 0;
   var origin_y = 0;
   for(var i = 0; i < len; i++) {

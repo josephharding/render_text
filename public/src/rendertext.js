@@ -65,8 +65,8 @@ function RenderText(gl, uv, image, image_dim) {
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 };
 
-RenderText.prototype.updateText = function(str) {
-	this._glyph.updateText(str);
+RenderText.prototype.updateText = function(gl, str) {
+	this._glyph.updateText(gl, str);
 };
 
 RenderText.prototype.draw = function(gl) {
