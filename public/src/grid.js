@@ -4,10 +4,13 @@ Grid.prototype._positions;
 Grid.prototype._uvs;
 Grid.prototype._width;
 
-function Grid(dims, len, uvs, gl) {
+function Grid(dims, len, uvs, gl, program) {
   this._uvs = uvs;
  	this._positions = [];
   	
+  this._pos_loc = gl.getAttribLocation(program, "a_position");
+  this._uv_loc = gl.getAttribLocation(program, "a_uv");
+  
   this._width = 0;
   var origin_y = 0;
   for(var i = 0; i < len; i++) {
@@ -29,14 +32,14 @@ function Grid(dims, len, uvs, gl) {
   var positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._positions), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(1);
-  gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(this._pos_loc);
+  gl.vertexAttribPointer(this._pos_loc, 2, gl.FLOAT, false, 0, 0);
 
   var uvBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this._uvs), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);  
+  gl.enableVertexAttribArray(this._uv_loc);
+  gl.vertexAttribPointer(this._uv_loc, 2, gl.FLOAT, false, 0, 0);  
 };
 
 Grid.prototype.getWidth = function() {
@@ -46,11 +49,11 @@ Grid.prototype.getWidth = function() {
 Grid.prototype.draw = function(gl) {
   gl.bindVertexArray(this._vao);
   
-  gl.enableVertexAttribArray(0);
-  gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(this._pos_loc);
+  gl.enableVertexAttribArray(this._uv_loc);
 	 
   gl.drawArrays(gl.TRIANGLES, 0, this._positions.length / 2);
   
-  gl.disableVertexAttribArray(0);
-  gl.disableVertexAttribArray(1);
+  gl.disableVertexAttribArray(this._pos_loc);
+  gl.disableVertexAttribArray(this._uv_loc);
 };

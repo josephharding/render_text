@@ -6,9 +6,10 @@ GlyphGrid.prototype._program;
 GlyphGrid.prototype._image_dim;
 GlyphGrid.prototype._glyph_dim;
 
-function GlyphGrid(gl, uv_source, image, glyph_dim) {
+function GlyphGrid(gl, uv_source, image, glyph_dim, program) {
   this._uv_source = uv_source;
   this._texture = gl.createTexture();
+  this._program = program;
   this._image_dim = image.height;
   if(image.width != this._image_dim) {
     console.log("error: glyph grid assumes square images!");
@@ -70,7 +71,7 @@ GlyphGrid.prototype.updateText = function(text) {
       console.log("error: specified a character not in the glyph texture atlas!");
     }
   }
-  this._grid = new Grid(dims, text.length, this._uvs, gl);
+  this._grid = new Grid(dims, text.length, this._uvs, gl, this._program);
 };
 
 

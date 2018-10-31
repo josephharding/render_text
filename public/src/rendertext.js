@@ -35,8 +35,8 @@ function RenderText(gl, uv, image, image_dim) {
   console.log("g a_offset:", gl.getAttribLocation(this._glyph_program, "a_offset"));
   */
 
-  this._glyph = new GlyphGrid(gl, uv, image, image_dim); // actual text mesh and texture
-	this._quad = new Quad(gl); // canvas for doing screen capture and applying blur effect
+  this._glyph = new GlyphGrid(gl, uv, image, image_dim, this._glyph_program); // actual text mesh and texture
+	this._quad = new Quad(gl, this._quad_program); // canvas for doing screen capture and applying blur effect
 
 	this._texture = gl.createTexture();
 

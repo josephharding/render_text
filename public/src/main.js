@@ -104,8 +104,8 @@ function renderTick() {
 		requestAnimationFrame(renderTick);
 	}, 100);
 	//_renderer.drawProjection(_thing, _thingTwo);
-	_renderer.drawOrtho(_orthoThing);
-	//_renderer.draw(_text, _colorQuad);
+	//_renderer.drawOrtho(_orthoThing);
+	_renderer.draw(_text, _colorQuad);
 };
 
 window.onload = function() {  
@@ -128,20 +128,21 @@ window.onload = function() {
     loadImage('images/uv_joe.png')
   ])
   .then(data => {
-    _thing = new Thing(gl, JSON.parse(data[0]), data[1]);
-    _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1]);
-    
-    //_orthoThing = new OrthoThing(gl, JSON.parse(data[5]), data[6]);
-    _orthoThing = new OrthoThing(gl, parseXMLMesh(data[7]), data[8]);
-    
-    _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
-    _text.updateText('hello world');
-   
-    _colorQuad = new ColorQuad(gl, JSON.parse(data[4]));
-
-    //_renderer.initProjection(gl);
-    _renderer.initOrtho(gl);
-    //_renderer.init(gl);
+    /*
+    _renderer.initProjection(gl, (program) => {  
+      _thing = new Thing(gl, JSON.parse(data[0]), data[1], program);
+      _thingTwo = new Thing(gl, JSON.parse(data[0]), data[1], program);
+    });
+    _renderer.initOrtho(gl, (program) => {
+      //_orthoThing = new OrthoThing(gl, JSON.parse(data[5]), data[6]);
+      _orthoThing = new OrthoThing(gl, parseXMLMesh(data[7]), data[8], program);
+    });
+    */
+    _renderer.init(gl, () => {
+      _text = new RenderText(gl, JSON.parse(data[2]), data[3], 32);
+      _text.updateText('hello world');
+      _colorQuad = new ColorQuad(gl, JSON.parse(data[4]));
+    });
     renderTick(); 
   }); 
   

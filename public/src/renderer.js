@@ -11,11 +11,12 @@ function Renderer() {
   this.modelViewMatrixStack = [];
 }
 
-Renderer.prototype.init = function (gl) {
+Renderer.prototype.init = function (gl, onInit) {
   this._gl = gl;
+  onInit();
 };
 
-Renderer.prototype.initProjection = function (gl) {
+Renderer.prototype.initProjection = function (gl, onInit) {
   this._gl = gl;	
 
 	this.three_program = createProgram(gl, getShader(gl, "thing-vs"), getShader(gl, "thing-fs"));
@@ -25,7 +26,7 @@ Renderer.prototype.initProjection = function (gl) {
   this.imageUL = this._gl.getUniformLocation(this.three_program, "u_image");
   this.lightUL = this._gl.getUniformLocation(this.three_program, "u_light");
   this.offsetUL = this._gl.getUniformLocation(this.three_program, "u_offset");
-	
+
   /*
   console.log("t a_position:", gl.getAttribLocation(this.three_program, "a_position"));
   console.log("t a_uv:", gl.getAttribLocation(this.three_program, "a_uv"));
@@ -41,9 +42,11 @@ Renderer.prototype.initProjection = function (gl) {
   
   mat4.perspective(this.projection, glMatrix.toRadian(120),
     this._gl.drawingBufferWidth / this._gl.drawingBufferHeight, 1, 100);  
+
+  onInit(this.three_program);
 };
 
-Renderer.prototype.initOrtho = function (gl) {
+Renderer.prototype.initOrtho = function (gl, onInit) {
   this._gl = gl;	
 
 	this.ortho_program = createProgram(gl, getShader(gl, "ortho-vs"), getShader(gl, "ortho-fs"));
@@ -61,6 +64,8 @@ Renderer.prototype.initOrtho = function (gl) {
     
   mat4.ortho(this.ortho, -this._gl.drawingBufferWidth / 2, this._gl.drawingBufferWidth / 2,
     -this._gl.drawingBufferHeight / 2, this._gl.drawingBufferHeight / 2, -10, 10);
+  
+  onInit(this.ortho_program);
 };
 
 Renderer.prototype.drawOrtho = function (thing) {

@@ -2,10 +2,12 @@
 OrthoThing.prototype._vao;
 OrthoThing.prototype._element_count;
 
-function OrthoThing(gl, data, image) {
+function OrthoThing(gl, data, image, program) {
  	this._element_count = data['indices'].length;
 
   this.offset = vec3.create();
+  this._pos_loc = gl.getAttribLocation(program, "a_position");
+  this._uv_loc = gl.getAttribLocation(program, "a_uv");
 
   this._texture = gl.createTexture();
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -27,14 +29,14 @@ function OrthoThing(gl, data, image) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data['verts']), gl.STATIC_DRAW);
   
-  gl.enableVertexAttribArray(1);
-  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0); 
+  gl.enableVertexAttribArray(this._pos_loc);
+  gl.vertexAttribPointer(this._pos_loc, 3, gl.FLOAT, false, 0, 0); 
 	
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data['uvs']), gl.STATIC_DRAW); 
   
-	gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); 
+	gl.enableVertexAttribArray(this._uv_loc);
+  gl.vertexAttribPointer(this._uv_loc, 2, gl.FLOAT, false, 0, 0); 
 }
 
 OrthoThing.prototype.setOffset = function(offsetUL, x, y, z) { 
@@ -47,12 +49,12 @@ OrthoThing.prototype.draw = function(offsetUL, gl) {
 
   gl.bindVertexArray(this._vao);
 
-  gl.enableVertexAttribArray(0);
-  gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(this._pos_loc);
+  gl.enableVertexAttribArray(this._uv_loc);
  
   gl.uniform3fv(offsetUL, this.offset);
   gl.drawElements(gl.TRIANGLES, this._element_count, gl.UNSIGNED_SHORT, 0);
   
-  gl.disableVertexAttribArray(0);
-  gl.disableVertexAttribArray(1);
+  gl.disableVertexAttribArray(this._pos_loc);
+  gl.disableVertexAttribArray(this._uv_loc);
 };
